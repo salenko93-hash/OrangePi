@@ -2,8 +2,8 @@
 # Runs inside Cage as lyceumtv-kiosk, with its own session bus.
 set -Eeuo pipefail
 
-# Only change a connected output when its EDID explicitly advertises 720p.
-# Do not alter Armbian boot files or force an unsupported HDMI mode.
+# Keep Cage's EDID-preferred mode. An unsolicited 720p change can make the
+# Sharp TV drop/reconnect HDMI; the low-memory web profile stays enabled.
 /usr/bin/python3 -I /usr/local/lib/lyceumtv/display_mode.py || true
 
 # A per-user PulseAudio instance supplies HDMI/analogue audio to GStreamer.

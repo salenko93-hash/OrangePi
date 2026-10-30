@@ -27,6 +27,7 @@ def run():
     observed = []
 
     def activate(application):
+        host.configure_gtk_cursor(Gtk)
         window = Gtk.ApplicationWindow(
             application=application, title="LyceumTV window probe"
         )
@@ -37,6 +38,12 @@ def run():
         def finish():
             observed.append(window.get_mapped())
             print("PROBE_MAPPED=" + str(window.get_mapped()), flush=True)
+            print("PROBE_CURSOR=" + str(window.get_cursor().get_name()), flush=True)
+            print(
+                "PROBE_CURSOR_THEME="
+                + str(Gtk.Settings.get_default().get_property("gtk-cursor-theme-name")),
+                flush=True,
+            )
             print(
                 "PROBE_SIZE=" + str((window.get_width(), window.get_height())),
                 flush=True,

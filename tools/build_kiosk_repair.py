@@ -16,6 +16,8 @@ check = (
     .rstrip()
 )
 browser = (root / "scripts/kiosk_browser.py").read_text().rstrip()
+display = (root / "scripts/display_mode.py").read_text().rstrip()
+cursor = (root / "scripts/hide_cursor.py").read_text().rstrip()
 header = """param(
     [string]$BoardHost = "192.168.0.160",
     [string]$BoardUser = "admin"
@@ -27,12 +29,13 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Repairing kiosk 3.7.4 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
+Write-Host "Repairing kiosk 3.7.4 (Native HDMI + GTK cursor) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 sudo -v
 new_host=""
-trap 'if [ -n "$new_host" ]; then sudo rm -f -- "$new_host"; fi; rm -f -- "$0"; sudo systemctl start lyceumtv-watchdog.timer' EXIT
+new_mode=""
+trap 'if [ -n "$new_host" ]; then sudo rm -f -- "$new_host"; fi; if [ -n "$new_mode" ]; then sudo rm -f -- "$new_mode"; fi; rm -f -- "$0"; sudo systemctl start lyceumtv-watchdog.timer' EXIT
 sudo systemctl stop lyceumtv-watchdog.timer lyceumtv-watchdog.service lyceumtv-kiosk.service
 sudo install -d -o root -g root -m 755 /etc/systemd/system/lyceumtv-kiosk.service.d
 sudo tee /etc/systemd/system/lyceumtv-kiosk.service.d/40-lyceumtv-capabilities.conf >/dev/null <<'UNIT'
@@ -49,6 +52,10 @@ if account.pw_uid == 0 or account.pw_dir != "/var/lib/lyceumtv-kiosk":
     raise SystemExit("Refusing unexpected kiosk account/home directory")
 prepare_profile(account.pw_dir, account.pw_uid, account.pw_gid)
 PYPROFILE
+sudo /usr/bin/python3 -I - <<'PYCURSOR'
+"""
+after_cursor = """
+PYCURSOR
 sudo sed -i.before-single-output 's|/usr/bin/cage --|/usr/bin/cage -m last --|' /usr/local/lib/lyceumtv/launch-kiosk.sh
 if loginctl show-user --no-pager lyceumtv-kiosk >/dev/null 2>&1; then
   sudo loginctl terminate-user lyceumtv-kiosk
@@ -57,6 +64,18 @@ sudo test -d /usr/local/lib/lyceumtv
 if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.4 ]; then
   sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.4
 fi
+new_mode=$(sudo mktemp /usr/local/lib/lyceumtv/.display-mode-XXXXXX)
+sudo tee "$new_mode" >/dev/null <<'PYDISPLAY'
+"""
+install_mode = """
+PYDISPLAY
+sudo chown root:root "$new_mode"
+sudo chmod 644 "$new_mode"
+if [ ! -e /usr/local/lib/lyceumtv/display_mode.py.before-native-mode ]; then
+  sudo cp -p /usr/local/lib/lyceumtv/display_mode.py /usr/local/lib/lyceumtv/display_mode.py.before-native-mode
+fi
+sudo mv -f -- "$new_mode" /usr/local/lib/lyceumtv/display_mode.py
+new_mode=""
 new_host=$(sudo mktemp /usr/local/lib/lyceumtv/.kiosk-browser-XXXXXX)
 sudo tee "$new_host" >/dev/null <<'PYHOST'
 """
@@ -81,6 +100,8 @@ except (OSError, RuntimeError, subprocess.SubprocessError) as error:
 PYCHECK
 then
   echo "Kiosk process remained stable for 20 seconds; check the TV picture."
+  kiosk_uid=$(id -u lyceumtv-kiosk)
+  sudo journalctl -b "_UID=$kiosk_uid" --since "@$started" -n 30 --no-pager
 else
   sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 25 --no-pager
   kiosk_uid=$(id -u lyceumtv-kiosk)
@@ -112,6 +133,12 @@ Write-Host "Kiosk settings applied. Check the TV picture; this does not update t
     + profile
     + "\n"
     + footer
+    + cursor
+    + "\n"
+    + after_cursor
+    + display
+    + "\n"
+    + install_mode
     + browser
     + "\n"
     + install_browser

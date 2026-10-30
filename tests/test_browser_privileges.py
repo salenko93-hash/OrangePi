@@ -28,6 +28,9 @@ class BrowserPrivilegeTests(unittest.TestCase):
             def set_default_size(self, width, height):
                 self.size = (width, height)
 
+            def set_cursor_from_name(self, name):
+                self.cursor = name
+
             def fullscreen(self):
                 raise AssertionError("Cage must not configure an uninitialized surface")
 
@@ -39,6 +42,7 @@ class BrowserPrivilegeTests(unittest.TestCase):
         self.assertFalse(window.decorated)
         self.assertEqual(window.size, (1280, 720))
         self.assertTrue(window.presented)
+        self.assertEqual(window.cursor, "none")
 
     @unittest.skipUnless(
         sys.platform == "linux" and os.geteuid() != 0, "unprivileged Linux child"

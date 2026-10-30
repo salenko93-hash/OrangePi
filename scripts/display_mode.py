@@ -1,5 +1,6 @@
-"""Select an advertised HDMI 720p mode; keep native mode on unsupported outputs."""
+"""Preserve the TV's preferred mode; 720p is an explicit opt-in."""
 
+import argparse
 import json
 import subprocess
 
@@ -24,7 +25,20 @@ def choose_mode(outputs):
     return None
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--prefer-720p", action="store_true", help="Opt in to an advertised 720p mode"
+    )
+    args = parser.parse_args(argv)
+    if not args.prefer_720p:
+        # Sharp HDMI dropped/reconnected twice after our startup 720p modeset.
+        # Let Cage keep the EDID preferred mode instead of renegotiating it.
+        print(
+            "Keeping the TV preferred HDMI mode; no startup resolution change.",
+            flush=True,
+        )
+        return
     try:
         result = subprocess.run(
             ["/usr/bin/wlr-randr", "--json"],

@@ -1,11 +1,14 @@
 """Orange Pi deployment decisions, using disposable files and no sudo."""
 
 import importlib.util
+from contextlib import redirect_stdout
+import io
 import json
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "server"))
@@ -27,6 +30,24 @@ preflight = script_module("deployment_preflight")
 
 
 class OrangePiTests(unittest.TestCase):
+    def test_startup_preserves_native_mode_without_any_wlr_randr_request(self):
+        with (
+            patch.object(display.subprocess, "run") as run,
+            redirect_stdout(io.StringIO()) as output,
+        ):
+            display.main([])
+        run.assert_not_called()
+        self.assertIn("no startup resolution change", output.getvalue())
+
+    def test_standalone_repair_installs_the_same_native_display_policy(self):
+        script = (ROOT / "FIX_KIOSK_ORANGEPI.ps1").read_text(encoding="utf-8-sig")
+        embedded = (
+            script.split("<<'PYDISPLAY'\n", 1)[1].split("\nPYDISPLAY", 1)[0].rstrip()
+        )
+        self.assertEqual(
+            embedded, (ROOT / "scripts/display_mode.py").read_text().rstrip()
+        )
+
     def test_tv_host_allows_tv_and_preview_but_blocks_other_origins_and_local_admin(
         self,
     ):

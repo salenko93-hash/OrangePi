@@ -100,11 +100,20 @@ def make_settings(WebKit):
     )
 
 
+def configure_gtk_cursor(Gtk):
+    # Cage and GTK can load different cursor themes. Set the client theme too,
+    # so a WebKit request for a standard pointer still resolves to transparency.
+    settings = Gtk.Settings.get_default()
+    if settings is not None:
+        settings.set_property("gtk-cursor-theme-name", "lyceumtv-invisible")
+
+
 def present_kiosk_window(window):
     # Cage fills its output itself. Calling fullscreen before the initial commit
     # hits an uninitialized xdg_surface in Cage 0.2.1 / wlroots 0.19.
     window.set_decorated(False)
     window.set_default_size(1280, 720)
+    window.set_cursor_from_name("none")
     window.present()
 
 
@@ -171,6 +180,7 @@ def main(argv=None):
                 self.quit()
 
         def build_tv(self):
+            configure_gtk_cursor(Gtk)
             settings = make_settings(WebKit)
             profile = Path.home() / ".local/share/lyceumtv-webkit"
             cache = Path.home() / ".cache/lyceumtv-webkit"
@@ -203,6 +213,11 @@ def main(argv=None):
             )
             self.window.set_child(self.view)
             present_kiosk_window(self.window)
+            print(
+                "GTK cursor: window=none theme="
+                + str(Gtk.Settings.get_default().get_property("gtk-cursor-theme-name")),
+                flush=True,
+            )
             self.view.load_uri(TV_URL)
 
         def decide_policy(self, _view, decision, kind):

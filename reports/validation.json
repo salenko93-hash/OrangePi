@@ -106,7 +106,7 @@
     "v2_owner_result": "Owner initially confirmed cursor hidden, then reported it remains after powering on Orange Pi; boot journal has not been supplied",
     "v3_checks": "Actual launcher process passes all three cursor variables even with an empty or conflicting inherited cursor environment. Upgrade is idempotent, preserves local launcher content and keeps the original backup. Existing native wlroots NULL/default theme checks still pass.",
     "wlroots_019_option_check": "Extracted Debian wlroots 0.19.3 shared library includes WLR_NO_HARDWARE_CURSORS and the forcing-software-cursors implementation message; physical H3 driver behavior is not claimed verified",
-    "latest_owner_report": "Cursor remains and TV needs an extra off/on cycle after board startup; actual installed version and Cage runtime environment have not yet been verified"
+    "latest_owner_report": "Diagnostic confirms actual server 3.7.4, NRestarts=0, transparent cursor files and WLR_NO_HARDWARE_CURSORS/XCURSOR_* in Cage and browser. Owner reports remaining cursor/first-start issue."
   },
   "local_sync_mode": {
     "behavior": "Empty manifest_url and sheets_url select local mode without network/staging/live data changes. Configured failures still become health alerts.",
@@ -121,5 +121,19 @@
     "targeted_tests_passed": 7,
     "payload_validation": "Shell and embedded Python syntax, canonical source equality and UTF-8 BOM checked",
     "hardware_run": "Awaiting owner report; physical board is not reachable from this cloud workspace"
+  },
+  "post_release_native_hdmi_gtk": {
+    "source": "Owner LyceumTV-HDMI-20261030-145328.txt; owner explicitly denies manually cycling the TV before capture",
+    "verified_on_board": "Server 3.7.4; no restarts; HDMI-A-1 active and firmware Unknown-1 disabled; browser capability sets zero; Cage/browser receive cursor environment; cursor files match canonical transparent bytes",
+    "timeline": "720p/60 set at 13:39:36; spontaneous HDMI disconnect/reconnect 13:39:58–13:40:01 and 13:40:07–13:40:15; final active mode EDID-preferred 1080p/50",
+    "inference_limit": "The sequence supports removing the unsolicited startup modeset; it does not prove the precise kernel/TV link fault or cursor source. Diagnostic snapshot was captured after the link events.",
+    "change": "No default display-mode query/change on startup, 720p explicit opt-in only. Hide cursor on Gtk.ApplicationWindow before present and select transparent GTK cursor theme as well as the compositor theme.",
+    "real_gtk_probe": "GTK4 4.18.6 + Cage0.2.0: actual production helper maps window, cursor name none, GTK cursor theme lyceumtv-invisible; no early fullscreen request. Exact ARM WebKit rendering remains untested.",
+    "wlroots_cursor_probe": "Native wlroots 0.19.3 now also resolves all tested theme/cursor aliases to transparent pixels; old NULL/default theme failure is reproduced in the same regression",
+    "full_project_tests_passed": 113,
+    "javascript_runtime_checks_passed": 8,
+    "repair": "Current FIX_KIOSK_ORANGEPI.ps1 embeds canonical cursor installer, browser host and native display helper; backups, atomic root-owned file replacement and 20-second stability check retained",
+    "hardware_result": "Awaiting owner verification of this diagnostic-driven patch; no physical success claimed",
+    "archive": "Published ZIP 3.7.4 remains immutable and does not include this later patch"
   }
 }

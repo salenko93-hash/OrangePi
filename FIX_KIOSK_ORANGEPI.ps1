@@ -9,12 +9,13 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Repairing kiosk 3.7.4 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
+Write-Host "Repairing kiosk 3.7.4 (Native HDMI + GTK cursor) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 sudo -v
 new_host=""
-trap 'if [ -n "$new_host" ]; then sudo rm -f -- "$new_host"; fi; rm -f -- "$0"; sudo systemctl start lyceumtv-watchdog.timer' EXIT
+new_mode=""
+trap 'if [ -n "$new_host" ]; then sudo rm -f -- "$new_host"; fi; if [ -n "$new_mode" ]; then sudo rm -f -- "$new_mode"; fi; rm -f -- "$0"; sudo systemctl start lyceumtv-watchdog.timer' EXIT
 sudo systemctl stop lyceumtv-watchdog.timer lyceumtv-watchdog.service lyceumtv-kiosk.service
 sudo install -d -o root -g root -m 755 /etc/systemd/system/lyceumtv-kiosk.service.d
 sudo tee /etc/systemd/system/lyceumtv-kiosk.service.d/40-lyceumtv-capabilities.conf >/dev/null <<'UNIT'
@@ -64,6 +65,187 @@ if account.pw_uid == 0 or account.pw_dir != "/var/lib/lyceumtv-kiosk":
     raise SystemExit("Refusing unexpected kiosk account/home directory")
 prepare_profile(account.pw_dir, account.pw_uid, account.pw_gid)
 PYPROFILE
+sudo /usr/bin/python3 -I - <<'PYCURSOR'
+"""Install a transparent Xcursor theme for the TV service only."""
+
+import os
+from pathlib import Path
+import struct
+import stat
+import tempfile
+
+THEME = "lyceumtv-invisible"
+THEME_NAMES = (THEME, "default", "left_ptr")
+SEARCH_PATH = "usr/local/share/lyceumtv-cursors"
+BLOCK_BEGIN = "# BEGIN LyceumTV cursor environment"
+BLOCK_END = "# END LyceumTV cursor environment"
+LAUNCHER_BLOCK = f"""{BLOCK_BEGIN}
+export XCURSOR_THEME={THEME}
+export XCURSOR_PATH=/{SEARCH_PATH}
+export WLR_NO_HARDWARE_CURSORS=1
+echo "TV cursor: theme=$XCURSOR_THEME path=$XCURSOR_PATH software=$WLR_NO_HARDWARE_CURSORS"
+{BLOCK_END}
+"""
+CURSOR_NAMES = (
+    "left_ptr",
+    "default",
+    "arrow",
+    "top_left_arrow",
+    "pointer",
+    "hand1",
+    "hand2",
+    "text",
+    "xterm",
+    "ibeam",
+    "wait",
+    "watch",
+    "progress",
+    "left_ptr_watch",
+    "move",
+    "fleur",
+    "grab",
+    "grabbing",
+    "help",
+    "question_arrow",
+    "crosshair",
+    "cross",
+    "not-allowed",
+    "forbidden",
+    "no-drop",
+    "copy",
+    "alias",
+    "context-menu",
+    "cell",
+    "vertical-text",
+    "all-scroll",
+    "col-resize",
+    "row-resize",
+    "n-resize",
+    "s-resize",
+    "e-resize",
+    "w-resize",
+    "ne-resize",
+    "nw-resize",
+    "se-resize",
+    "sw-resize",
+    "ew-resize",
+    "ns-resize",
+    "nesw-resize",
+    "nwse-resize",
+    "size_all",
+    "size_hor",
+    "size_ver",
+    "size_bdiag",
+    "size_fdiag",
+    "zoom-in",
+    "zoom-out",
+)
+
+
+def transparent_cursor():
+    # Xcursor header, one image TOC entry, image header, one transparent ARGB pixel.
+    return struct.pack(
+        "<7I", 0x72756358, 16, 0x10000, 1, 0xFFFD0002, 24, 28
+    ) + struct.pack("<10I", 36, 0xFFFD0002, 24, 1, 1, 1, 0, 0, 0, 0)
+
+
+def write_atomic(path, content, mode=0o644):
+    fd, temporary = tempfile.mkstemp(prefix=".cursor-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(content)
+            os.fchmod(stream.fileno(), mode)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def install(root=Path("/")):
+    root = Path(root)
+    icons = root / SEARCH_PATH
+    dropin = root / "etc/systemd/system/lyceumtv-kiosk.service.d"
+    directories = [icons, dropin]
+    for theme_name in THEME_NAMES:
+        theme = icons / theme_name
+        directories.extend((theme, theme / "cursors"))
+    for directory in directories:
+        if directory.is_symlink():
+            raise RuntimeError(
+                "Refusing linked configuration directory: " + str(directory)
+            )
+        directory.mkdir(parents=True, exist_ok=True)
+        directory.chmod(0o755)
+    # Cage 0.2.1 passes NULL as the pointer theme to wlroots, which loads
+    # "default" without consulting XCURSOR_THEME. XWayland uses "left_ptr".
+    # Both aliases live in this service's private search path, never in the
+    # global /usr/share/icons/default theme used by other sessions.
+    for theme_name in THEME_NAMES:
+        theme = icons / theme_name
+        for name in CURSOR_NAMES:
+            write_atomic(theme / "cursors" / name, transparent_cursor())
+        write_atomic(
+            theme / "index.theme",
+            b"[Icon Theme]\nName=LyceumTV invisible cursor\nDirectories=cursors\n",
+        )
+    # Cage inherits these variables from this service, independently of desktops.
+    write_atomic(
+        dropin / "50-cursor.conf",
+        (
+            "[Service]\n"
+            f"Environment=XCURSOR_THEME={THEME}\n"
+            f"Environment=XCURSOR_PATH=/{SEARCH_PATH}\n"
+            "Environment=WLR_NO_HARDWARE_CURSORS=1\n"
+        ).encode(),
+    )
+
+
+def configure_launcher(path):
+    """Set the cursor environment before Cage even without inherited settings."""
+    path = Path(path)
+    if not stat.S_ISREG(path.lstat().st_mode):
+        raise RuntimeError("Refusing a linked/non-regular kiosk launcher")
+    original = path.read_text()
+    source = original
+    if BLOCK_BEGIN in source or BLOCK_END in source:
+        if source.count(BLOCK_BEGIN) != 1 or source.count(BLOCK_END) != 1:
+            raise RuntimeError("Unexpected cursor block in the kiosk launcher")
+        before, block = source.split(BLOCK_BEGIN, 1)
+        if BLOCK_END not in block:
+            raise RuntimeError("Incomplete cursor block in the kiosk launcher")
+        source = before.rstrip("\n") + "\n" + block.split(BLOCK_END, 1)[1].lstrip("\n")
+    anchor = "set -Eeuo pipefail\n"
+    if (
+        not source.startswith("#!")
+        or anchor not in source
+        or "/usr/bin/cage" not in source
+    ):
+        raise RuntimeError("Unrecognized kiosk launcher; leaving it unchanged")
+    before, after = source.split(anchor, 1)
+    updated = before + anchor + "\n" + LAUNCHER_BLOCK + "\n" + after.lstrip("\n")
+    # Canonical and previously patched launchers converge without appending blocks.
+    if updated != original:
+        backup = path.with_name(path.name + ".before-cursor-v3")
+        if not backup.exists():
+            write_atomic(backup, original.encode(), mode=0o755)
+        write_atomic(path, updated.encode(), mode=0o755)
+
+
+def main():
+    if os.geteuid() != 0:
+        raise SystemExit("Run this installer with sudo.")
+    install()
+    launcher = Path("/usr/local/lib/lyceumtv/launch-kiosk.sh")
+    if launcher.lstat().st_uid != 0:
+        raise SystemExit("Refusing a kiosk launcher not owned by root")
+    configure_launcher(launcher)
+    print("Installed cursor fix v3: startup environment and software cursor.")
+
+
+if __name__ == "__main__":
+    main()
+
+PYCURSOR
 sudo sed -i.before-single-output 's|/usr/bin/cage --|/usr/bin/cage -m last --|' /usr/local/lib/lyceumtv/launch-kiosk.sh
 if loginctl show-user --no-pager lyceumtv-kiosk >/dev/null 2>&1; then
   sudo loginctl terminate-user lyceumtv-kiosk
@@ -72,6 +254,90 @@ sudo test -d /usr/local/lib/lyceumtv
 if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.4 ]; then
   sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.4
 fi
+new_mode=$(sudo mktemp /usr/local/lib/lyceumtv/.display-mode-XXXXXX)
+sudo tee "$new_mode" >/dev/null <<'PYDISPLAY'
+"""Preserve the TV's preferred mode; 720p is an explicit opt-in."""
+
+import argparse
+import json
+import subprocess
+
+
+def choose_mode(outputs):
+    for output in outputs:
+        if not isinstance(output, dict) or not output.get("enabled"):
+            continue
+        name = output.get("name", "")
+        if not name.startswith("HDMI"):
+            continue
+        modes = [
+            mode
+            for mode in output.get("modes", [])
+            if mode.get("width") == 1280
+            and mode.get("height") == 720
+            and 49 <= float(mode.get("refresh", 0)) <= 61
+        ]
+        if modes:
+            mode = min(modes, key=lambda m: abs(float(m["refresh"]) - 60))
+            return name, f"1280x720@{float(mode['refresh']):.6f}Hz"
+    return None
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--prefer-720p", action="store_true", help="Opt in to an advertised 720p mode"
+    )
+    args = parser.parse_args(argv)
+    if not args.prefer_720p:
+        # Sharp HDMI dropped/reconnected twice after our startup 720p modeset.
+        # Let Cage keep the EDID preferred mode instead of renegotiating it.
+        print(
+            "Keeping the TV preferred HDMI mode; no startup resolution change.",
+            flush=True,
+        )
+        return
+    try:
+        result = subprocess.run(
+            ["/usr/bin/wlr-randr", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+        selected = choose_mode(json.loads(result.stdout))
+        if selected:
+            subprocess.run(
+                ["/usr/bin/wlr-randr", "--output", selected[0], "--mode", selected[1]],
+                timeout=5,
+                check=True,
+            )
+            print("HDMI low-memory mode:", *selected, flush=True)
+        else:
+            print(
+                "Keeping native display mode: no advertised HDMI 720p mode.", flush=True
+            )
+    except (
+        OSError,
+        ValueError,
+        TypeError,
+        KeyError,
+        subprocess.SubprocessError,
+    ) as error:
+        print("Keeping native display mode:", error, flush=True)
+
+
+if __name__ == "__main__":
+    main()
+
+PYDISPLAY
+sudo chown root:root "$new_mode"
+sudo chmod 644 "$new_mode"
+if [ ! -e /usr/local/lib/lyceumtv/display_mode.py.before-native-mode ]; then
+  sudo cp -p /usr/local/lib/lyceumtv/display_mode.py /usr/local/lib/lyceumtv/display_mode.py.before-native-mode
+fi
+sudo mv -f -- "$new_mode" /usr/local/lib/lyceumtv/display_mode.py
+new_mode=""
 new_host=$(sudo mktemp /usr/local/lib/lyceumtv/.kiosk-browser-XXXXXX)
 sudo tee "$new_host" >/dev/null <<'PYHOST'
 """Small GTK4/WebKitGTK TV host for Orange Pi PC; no desktop or Snap browser."""
@@ -176,11 +442,20 @@ def make_settings(WebKit):
     )
 
 
+def configure_gtk_cursor(Gtk):
+    # Cage and GTK can load different cursor themes. Set the client theme too,
+    # so a WebKit request for a standard pointer still resolves to transparency.
+    settings = Gtk.Settings.get_default()
+    if settings is not None:
+        settings.set_property("gtk-cursor-theme-name", "lyceumtv-invisible")
+
+
 def present_kiosk_window(window):
     # Cage fills its output itself. Calling fullscreen before the initial commit
     # hits an uninitialized xdg_surface in Cage 0.2.1 / wlroots 0.19.
     window.set_decorated(False)
     window.set_default_size(1280, 720)
+    window.set_cursor_from_name("none")
     window.present()
 
 
@@ -247,6 +522,7 @@ def main(argv=None):
                 self.quit()
 
         def build_tv(self):
+            configure_gtk_cursor(Gtk)
             settings = make_settings(WebKit)
             profile = Path.home() / ".local/share/lyceumtv-webkit"
             cache = Path.home() / ".cache/lyceumtv-webkit"
@@ -279,6 +555,11 @@ def main(argv=None):
             )
             self.window.set_child(self.view)
             present_kiosk_window(self.window)
+            print(
+                "GTK cursor: window=none theme="
+                + str(Gtk.Settings.get_default().get_property("gtk-cursor-theme-name")),
+                flush=True,
+            )
             self.view.load_uri(TV_URL)
 
         def decide_policy(self, _view, decision, kind):
@@ -396,6 +677,8 @@ except (OSError, RuntimeError, subprocess.SubprocessError) as error:
 PYCHECK
 then
   echo "Kiosk process remained stable for 20 seconds; check the TV picture."
+  kiosk_uid=$(id -u lyceumtv-kiosk)
+  sudo journalctl -b "_UID=$kiosk_uid" --since "@$started" -n 30 --no-pager
 else
   sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 25 --no-pager
   kiosk_uid=$(id -u lyceumtv-kiosk)
