@@ -6,6 +6,19 @@
 
 **[Завантажити готовий ZIP](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.3/LyceumTV-3.7.3-ORANGEPI-PC.zip)** — на сторінці файла натисніть стрілку **Download raw file**. Для приватного репозиторію потрібен вхід у GitHub. Розпакуйте весь архів.
 
+## Приховування курсора на телевізорі
+
+Курсор може малювати Cage навіть без підключеної миші. Для вже встановленого застосунку завантажте [HIDE_CURSOR_ORANGEPI.ps1](https://github.com/salenko93-hash/OrangePi/blob/main/HIDE_CURSOR_ORANGEPI.ps1) кнопкою **Download raw file**. Відкрийте PowerShell у папці завантаженого файла:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\HIDE_CURSOR_ORANGEPI.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
+```
+
+Скрипт установлює прозору тему курсора лише для служби телевізора, перезапускає її та перевіряє стабільність процесу протягом 20 секунд. Для повернення звичайного курсора видаліть на платі `/etc/systemd/system/lyceumtv-kiosk.service.d/50-cursor.conf`, виконайте `sudo systemctl daemon-reload` і `sudo systemctl restart lyceumtv-kiosk.service`.
+
+Фото власника підтверджує показ сторінки «Канікули» після вибору одного виходу Cage. Приховування курсора ще потребує перевірки на телевізорі. Ці доповнення після випуску є в поточних джерелах; раніше опублікований ZIP 3.7.3 не змінювався.
+
 ## Виправлення чорного екрана у встановленій 3.7.x
 
 У 3.7.2 скидання capabilities спрацювало на фізичній платі; після цього журнал показав окреме падіння Cage/wlroots на ранньому fullscreen-запиті. У 3.7.3 GTK-вікно показується без такого запиту: Cage сам розгортає його на весь вихід. Захист capset/prctl з 3.7.2 збережено, відсутній a11y-bus для окремого TV не запитується.

@@ -5,7 +5,7 @@
   "observed_user_os": "Armbian Community 26.11.0-trunk.108 / Ubuntu Resolute / kernel 6.18.57-current-sunxi",
   "target_host": "192.168.0.160",
   "ssh_user": "admin",
-  "unit_tests_passed": 100,
+  "unit_tests_passed": 102,
   "javascript_runtime_checks_passed": 8,
   "javascript_files_checked": 16,
   "browser_security_checks_passed": 9,
@@ -93,6 +93,13 @@
     "native_geometry_probe": "Two headless outputs: extend mapped a 2560x720 window; last mapped 1280x720",
     "native_limit": "Cloud Cage 0.2.0 segfaulted during cleanup after the last-mode probe quit. Correct mapped dimensions were observed; this is not a full pass for the target Cage0.2.1/physical display",
     "targeted_tests_passed": 6,
-    "hardware_result": "awaiting owner verification; blue picture may need further rendering diagnosis if single output is insufficient"
+    "hardware_result": "Owner photo confirms full holiday page (КАНІКУЛИ / Осінні канікули) on the physical Sharp TV; visible cursor remains."
+  },
+  "post_release_cursor": {
+    "method": "Transparent Xcursor theme selected only in lyceumtv-kiosk.service drop-in; existing desktop and browser security settings preserved",
+    "native_test": "libXcursor resolves 5 cursor names at 4 sizes and decodes a fully transparent 1x1 ARGB pixel",
+    "targeted_tests_passed": 2,
+    "hardware_result": "Awaiting owner verification of cursor hiding; full holiday page already confirmed by owner photo",
+    "project_verifier": "Passed 102 Python tests, 16 JavaScript syntax checks and 8 JavaScript runtime checks"
   }
 }

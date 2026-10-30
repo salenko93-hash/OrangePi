@@ -161,6 +161,7 @@ sudo install -o root -g root -m 755 "$ROOT/scripts/launch-kiosk.sh" /usr/local/l
 sudo install -o root -g root -m 755 "$ROOT/scripts/tv-session.sh" /usr/local/lib/lyceumtv/tv-session.sh
 sudo install -o root -g root -m 644 "$ROOT/scripts/kiosk_browser.py" /usr/local/lib/lyceumtv/kiosk_browser.py
 sudo install -o root -g root -m 644 "$ROOT/scripts/display_mode.py" /usr/local/lib/lyceumtv/display_mode.py
+sudo /usr/bin/python3 -I "$ROOT/scripts/hide_cursor.py"
 sudo install -o root -g root -m 755 "$ROOT/scripts/rollback-headless-kiosk.sh" /usr/local/sbin/lyceumtv-console
 sudo install -o root -g root -m 755 "$ROOT/scripts/security_audit.sh" /usr/local/sbin/lyceumtv-security-audit
 sudo install -o root -g root -m 755 "$ROOT/scripts/show_keys.py" /usr/local/sbin/lyceumtv-show-keys

@@ -28,6 +28,7 @@ TOP_FILES = {
     "CHECK_SECURITY_ORANGEPI.ps1",
     "OPEN_ADMIN.ps1",
     "FIX_KIOSK_ORANGEPI.ps1",
+    "HIDE_CURSOR_ORANGEPI.ps1",
 }
 DIRECTORIES = (
     "server",
