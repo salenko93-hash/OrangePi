@@ -9,7 +9,7 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Repairing kiosk 3.7.3 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
+Write-Host "Repairing kiosk 3.7.4 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 sudo -v
@@ -69,8 +69,8 @@ if loginctl show-user --no-pager lyceumtv-kiosk >/dev/null 2>&1; then
   sudo loginctl terminate-user lyceumtv-kiosk
 fi
 sudo test -d /usr/local/lib/lyceumtv
-if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.3 ]; then
-  sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.3
+if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.4 ]; then
+  sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.4
 fi
 new_host=$(sudo mktemp /usr/local/lib/lyceumtv/.kiosk-browser-XXXXXX)
 sudo tee "$new_host" >/dev/null <<'PYHOST'

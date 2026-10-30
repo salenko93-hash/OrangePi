@@ -181,7 +181,7 @@ sudo "$ROOT/scripts/prepare-kiosk.sh" "$KIOSK_USER"
 echo "[5/8] Installing systemd services..."
 sudo tee /etc/systemd/system/lyceumtv.service >/dev/null <<EOF
 [Unit]
-Description=LyceumTV 3.7.3
+Description=LyceumTV 3.7.4
 After=network-online.target
 Wants=network-online.target
 
@@ -362,7 +362,7 @@ done
 [[ "$healthy" == true ]] || { echo "Server health check failed. Inspect: sudo journalctl -u lyceumtv -n 60" >&2; exit 1; }
 
 echo
-echo "LyceumTV 3.7.3 installed."
+echo "LyceumTV 3.7.4 installed."
 echo "TV:      https://$PI_IP/"
 echo "Admin:   https://$PI_IP/admin"
 echo "Ops:     https://$PI_IP/ops"

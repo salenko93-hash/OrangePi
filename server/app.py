@@ -1394,7 +1394,7 @@ def main() -> None:
     port = int(cfg.get("port", 8080))
     write_event(
         "service.start",
-        "LyceumTV 3.7.3 Smart Information Display запущено",
+        "LyceumTV 3.7.4 Smart Information Display запущено",
         {"host": host, "port": port},
     )
     TELEGRAM.start()
@@ -1412,7 +1412,7 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, stop)
     print(
-        f"LyceumTV 3.7.3 Smart Information Display listening on http://{host}:{port}",
+        f"LyceumTV 3.7.4 Smart Information Display listening on http://{host}:{port}",
         flush=True,
     )
     try:

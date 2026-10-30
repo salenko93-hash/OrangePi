@@ -145,7 +145,11 @@
       ),
       statusTile(
         "Синхронізація",
-        sy.ok === false ? "ПОМИЛКА" : sy.version || "готово",
+        sy.ok === false
+          ? "ПОМИЛКА"
+          : sy.status === "local"
+            ? "ЛОКАЛЬНО"
+            : sy.version || "готово",
         sy.ok === false ? "bad" : "good",
       ),
       statusTile(

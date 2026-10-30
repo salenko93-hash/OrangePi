@@ -12,10 +12,10 @@ if (-not [System.Net.IPAddress]::TryParse($BoardHost, [ref]$parsedIP) -or $parse
 if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux username." }
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $target = "${BoardUser}@${BoardHost}"
-$remote = "/home/$BoardUser/LyceumTV-3.7.3-upload-$([guid]::NewGuid().ToString('N'))"
+$remote = "/home/$BoardUser/LyceumTV-3.7.4-upload-$([guid]::NewGuid().ToString('N'))"
 
 Write-Host "================================================="
-Write-Host " LyceumTV 3.7.3 ORANGE PI PC"
+Write-Host " LyceumTV 3.7.4 ORANGE PI PC"
 Write-Host " Orange Pi: $target"
 Write-Host "================================================="
 
@@ -106,8 +106,8 @@ if ($null -eq $health) {
 
 $health | ConvertTo-Json -Depth 6 | Out-Host
 
-if (-not $health.ok -or $health.version -ne "3.7.3") {
-    throw "Server reports version $($health.version), expected healthy 3.7.3. Reboot cancelled."
+if (-not $health.ok -or $health.version -ne "3.7.4") {
+    throw "Server reports version $($health.version), expected healthy 3.7.4. Reboot cancelled."
 }
 
 try {

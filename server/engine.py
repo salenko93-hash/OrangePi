@@ -322,9 +322,10 @@ class Engine:
             )
             self.sync_status = {**result, "at": self._now().isoformat()}
             if not background:
+                local = result.get("status") == "local"
                 write_event(
-                    "sync",
-                    "Ручна синхронізація завершена",
+                    "sync.local" if local else "sync",
+                    result["message"] if local else "Ручна синхронізація завершена",
                     {"version": result.get("version", "")},
                     actor="admin",
                 )

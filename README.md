@@ -1,42 +1,32 @@
-# LyceumTV 3.7.3 — Orange Pi PC
+# LyceumTV 3.7.4 — Orange Pi PC
 
-Окрема версія для **Orange Pi PC / Allwinner H3 / 1 ГБ RAM / armhf**. Основа — захищена LyceumTV 3.6.1. Сервер працює на самій Orange Pi; Raspberry Pi для цієї збірки не потрібна.
+Чистий проєкт для **Orange Pi PC / Allwinner H3 / 1 ГБ RAM / armhf**. Сервер, розклад, оголошення, тривоги, фото по 3 секунди, відео та музика працюють на самій платі. Екран: Cage + WebKitGTK 6.0 / GTK4, медіа через GStreamer і окремий PulseAudio.
 
-Розклад, оголошення, тривоги, хвилина мовчання, фото по 3 секунди, відео й музика збережені. Графічний екран: **Cage + WebKitGTK 6.0 / GTK4**, без робочого столу та Snap/Chromium. Медіа відтворюються через GStreamer і окремий PulseAudio користувача kiosk.
+**[Завантажити готовий ZIP](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.4/LyceumTV-3.7.4-ORANGEPI-PC.zip)** → **Download raw file** → розпакуйте весь архів. Для приватного репозиторію потрібен вхід у GitHub.
 
-**[Завантажити готовий ZIP](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.3/LyceumTV-3.7.3-ORANGEPI-PC.zip)** — на сторінці файла натисніть стрілку **Download raw file**. Для приватного репозиторію потрібен вхід у GitHub. Розпакуйте весь архів.
+## Оновлення встановленої 3.7.x
 
-## Приховування курсора на телевізорі
-
-Курсор може малювати Cage навіть без підключеної миші. Cage 0.2.1 передає wlroots порожню назву теми, а wlroots завантажує `default`, ігноруючи `XCURSOR_THEME`. Тому використовується прозора `default` в окремому каталозі пошуку служби телевізора. Цю відмінність відтворено через бібліотеку wlroots.
-
-Власник спочатку підтвердив зникнення курсора після v2, але повідомив про його повернення після ввімкнення Orange Pi. У v3 налаштування задаються також безпосередньо перед кожним запуском Cage та ввімкнено `WLR_NO_HARDWARE_CURSORS=1`, щоб обійти апаратний курсор драйвера. Причина повернення після ввімкнення ще не підтверджена журналом плати; результат v3 потребує фізичної перевірки.
-
-Для вже встановленого застосунку завантажте оновлений [HIDE_CURSOR_ORANGEPI.ps1](https://github.com/salenko93-hash/OrangePi/blob/main/HIDE_CURSOR_ORANGEPI.ps1) кнопкою **Download raw file** й замініть попередній файл. На початку запуску має бути **Applying cursor fix v3**. Відкрийте PowerShell у папці завантаженого файла:
+У PowerShell біля `INSTALL_TO_ORANGEPI.ps1`:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\HIDE_CURSOR_ORANGEPI.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
+.\INSTALL_TO_ORANGEPI.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
 ```
 
-Скрипт установлює прозору тему курсора лише для служби телевізора, додає позначений блок налаштувань у root-owned `launch-kiosk.sh`, перезапускає службу та перевіряє стабільність процесу протягом 20 секунд. Оригінал зміненого launcher зберігається як `launch-kiosk.sh.before-cursor-v3`. У журналі кожного запуску з'являється рядок `TV cursor: ... software=1`.
+Повне встановлення оновлює сервер і службові файли; зберігає ключі, налаштовані інтеграції, локальні розклади, календар та медіа. Скрипти ремонту екрана окремо не оновлюють сервер: саме тому панель могла продовжувати показувати 3.7.0.
 
-Для повернення звичайного курсора видаліть із `/usr/local/lib/lyceumtv/launch-kiosk.sh` блок між коментарями `BEGIN LyceumTV cursor environment` і `END LyceumTV cursor environment` включно, видаліть `/etc/systemd/system/lyceumtv-kiosk.service.d/50-cursor.conf`, виконайте `sudo systemctl daemon-reload` і `sudo systemctl restart lyceumtv-kiosk.service`.
+## Що виправлено
 
-Фото власника підтверджує показ сторінки «Канікули» після вибору одного виходу Cage. Ці доповнення після випуску є в поточних джерелах; раніше опублікований ZIP 3.7.3 не змінювався.
+- Без адрес зовнішніх джерел синхронізація має статус **ЛОКАЛЬНО**, не створює помилку Health Alerts, не звертається до мережі й не переписує локальні дані. Помилки налаштованого джерела залишаються видимими.
+- Cage використовує один вихід (`-m last`) замість розтягування вікна на віртуальний firmware-вихід і HDMI; показ сторінки «Канікули» підтверджено фото власника.
+- Прозора тема курсора враховує `default` у Cage 0.2.1. Налаштування задаються перед кожним запуском Cage; `WLR_NO_HARDWARE_CURSORS=1` обходить апаратний курсор. Результат після ввімкнення живлення ще перевіряється на платі.
+- Збережено виправлення профілю, скидання успадкованих capabilities до GTK і показ вікна без раннього fullscreen; WebKit sandbox залишається ввімкненим.
 
-## Виправлення чорного екрана у встановленій 3.7.x
+## Окремі скрипти екрана
 
-У 3.7.2 скидання capabilities спрацювало на фізичній платі; після цього журнал показав окреме падіння Cage/wlroots на ранньому fullscreen-запиті. У 3.7.3 GTK-вікно показується без такого запиту: Cage сам розгортає його на весь вихід. Захист capset/prctl з 3.7.2 збережено, відсутній a11y-bus для окремого TV не запитується.
+Для встановленої системи: [FIX_KIOSK_ORANGEPI.ps1](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.4/FIX_KIOSK_ORANGEPI.ps1) ремонтує browser host/профіль, [HIDE_CURSOR_ORANGEPI.ps1](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.4/HIDE_CURSOR_ORANGEPI.ps1) застосовує cursor fix v3. В обох місцях — усередині ZIP і як окремі файли — назви однакові. Запускайте у PowerShell у папці файла з `-BoardHost "192.168.0.160" -BoardUser "admin"`.
 
-Завантажте [FIX_KIOSK_ORANGEPI_373.ps1](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.3/FIX_KIOSK_ORANGEPI_373.ps1) через **Download raw file**. У PowerShell у папці цього файла:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\FIX_KIOSK_ORANGEPI_373.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
-```
-
-Скрипт атомарно оновлює root-owned браузерний host, зберігає попередній файл як kiosk_browser.py.before-3.7.3, ремонтує профіль, завершує старі сеанси окремого kiosk-користувача й перевіряє 20 секунд без зміни PID/NRestarts. При збої повертає помилку та показує свіжі журнали. Backend, ключі, розклад і медіа не змінюються. Зображення/звук після нового виправлення перевіряються на фізичній платі.
+Cursor fix зберігає змінений launcher як `launch-kiosk.sh.before-cursor-v3`. Для повернення звичайного курсора видаліть із `/usr/local/lib/lyceumtv/launch-kiosk.sh` блок між `BEGIN LyceumTV cursor environment` і `END LyceumTV cursor environment` включно та `/etc/systemd/system/lyceumtv-kiosk.service.d/50-cursor.conf`; виконайте `sudo systemctl daemon-reload` і `sudo systemctl restart lyceumtv-kiosk.service`.
 
 ## 1. Під’єднайте Orange Pi до мережі
 

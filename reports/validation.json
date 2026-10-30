@@ -1,16 +1,16 @@
 {
-  "version": "3.7.3",
+  "version": "3.7.4",
   "date": "2026-10-30",
   "target": "Orange Pi PC / Allwinner H3 / 1 GB / armhf",
   "observed_user_os": "Armbian Community 26.11.0-trunk.108 / Ubuntu Resolute / kernel 6.18.57-current-sunxi",
   "target_host": "192.168.0.160",
   "ssh_user": "admin",
-  "unit_tests_passed": 105,
+  "unit_tests_passed": 109,
   "javascript_runtime_checks_passed": 8,
   "javascript_files_checked": 16,
   "browser_security_checks_passed": 9,
   "browser_safety_checks_passed": 4,
-  "browser_orangepi_profile_checks_passed": 3,
+  "browser_orangepi_profile_checks_passed": 4,
   "generated_systemd_unit_syntax_checked": 8,
   "canonical_initial_data_files_unchanged": 8,
   "tested_runtime": "Cloud Debian 13 x86_64; Python 3.13; Chromium; isolated nginx 1.26.3",
@@ -19,7 +19,7 @@
     "actual_gi_import": "passed with extracted Debian WebKitGTK 2.52.6 and GTK4 4.18.6 libraries on x86_64; no host package installation",
     "actual_settings": "passed on Xvfb: no page cache/devtools, autoplay without gesture, software compositing, WebsitePolicies.ALLOW, document-viewer context",
     "full_webview_render": "not run: cloud user namespaces have read-only UID mapping and isolated library libexec paths are not installed into the host OS",
-    "cage_output_management": "upstream Cage v0.2.1 exposes wlr-output-management; installed/extracted wlr-randr 0.4.1 supports --json; actual HDMI modes not tested"
+    "cage_output_management": "Upstream Cage v0.2.1 exposes wlr-output-management; owner logs confirm actual advertised HDMI 720p selection, and a photo confirms the holiday page after selecting a single output"
   },
   "passed": [
     "Existing role/session/CSRF/XSS/device-token/media-quota/OTA-signature and recovery regressions",
@@ -38,17 +38,18 @@
     "Canonical embedded browser host checked; no sandbox disabling or OS binary changes",
     "Restart-loop false-positive checks and 20-second process-stability probe",
     "Regression rejects premature fullscreen; real GTK/Cage protocol probe maps the actual production window helper",
-    "Exact one-line sed field patch checked against 3.7.2 host: valid Python, preserved cap guard and byte-exact backup"
+    "Exact one-line sed field patch checked against 3.7.2 host: valid Python, preserved cap guard and byte-exact backup",
+    "Unconfigured external sync is local mode, preserves live data, and does not raise a false health alert; configured failures remain visible"
   ],
   "not_run": [
     "Full privileged apt/systemd/PAM/Armbian installation on the physical Orange Pi",
-    "Physical rendering/audio after applying 3.7.3 on GTK4.22/Cage0.2.1/wlroots0.19; actual capset/prctl on ARM32 was verified by the owner",
+    "Physical cold-start cursor fix v3 and full 3.7.4 installation on GTK4.22/Cage0.2.1/wlroots0.19; holiday page rendering and ARM32 capability clearing were confirmed by the owner",
     "Windows PowerShell execution and Windows certificate trust UI",
     "Physical HDMI/audio/video performance, actual RAM use and CPU temperature",
     "The users SSH/firewall/router security, power loss or SD-card faults",
     "Active scanning or sustained load on the physical board"
   ],
-  "release_verification": "Build verifies source and ZIP CRC/per-file SHA256; unpacked verification recorded alongside the published artifact metadata.",
+  "release_verification": "Source passed 109 Python tests, 8 JavaScript runtime checks, 16 JavaScript syntax checks, 17 browser checks, 8 systemd unit syntax checks and both repair payload checks. Release builder verifies ZIP CRC and per-file SHA256; unpacked verification is recorded in artifact metadata.",
   "physical_370_observations": {
     "source": "User-provided CHECK_ORANGEPI output, 2026-10-30 09:53–09:54",
     "backend": "Healthy 3.7.0, nginx/watchdog active",
@@ -70,7 +71,7 @@
     "failure_paths": "Root and privilege setup failure are rejected before GI loads",
     "repair_payload": "Canonical host bytes embedded, root-owned host replaced atomically, previous file preserved, dedicated kiosk sessions terminated",
     "stability": "20 seconds of stable MainPID/NRestarts required; active restart loop rejected in regression tests",
-    "limitations": "ARM32 capability clearing was confirmed by the owner in 3.7.2; full display/audio after 3.7.3 still require physical verification"
+    "limitations": "ARM32 capability clearing and holiday page rendering were confirmed by the owner; cold-start cursor v3 and physical audio still require verification"
   },
   "physical_372_observations": {
     "source": "Owner-provided Windows PowerShell 5.1 repair log, 2026-10-30 11:19",
@@ -78,7 +79,7 @@
     "initial_browser_caps": "0000000800000000 in inheritable/permitted/effective/ambient (CAP_WAKE_ALARM)",
     "remaining_failure": "Cage/wlroots aborts in wlr_xdg_surface_schedule_configure: Assertion surface->initialized",
     "display": "Mali400/Lima and HDMI-A-1 1280x720@60 initialized",
-    "373_result": "Awaiting owner verification; removing early fullscreen request is the current fix"
+    "373_result": "Owner confirmed stable 3.7.3 process and later holiday page rendering after single-output selection"
   },
   "gtk_window_protocol_probe": {
     "tested_runtime": "Actual GTK4 4.18.6, Cage 0.2.0, wlroots 0.18.2 on x86_64 headless/pixman; uses production present_kiosk_window",
@@ -105,5 +106,11 @@
     "v2_owner_result": "Owner initially confirmed cursor hidden, then reported it remains after powering on Orange Pi; boot journal has not been supplied",
     "v3_checks": "Actual launcher process passes all three cursor variables even with an empty or conflicting inherited cursor environment. Upgrade is idempotent, preserves local launcher content and keeps the original backup. Existing native wlroots NULL/default theme checks still pass.",
     "wlroots_019_option_check": "Extracted Debian wlroots 0.19.3 shared library includes WLR_NO_HARDWARE_CURSORS and the forcing-software-cursors implementation message; physical H3 driver behavior is not claimed verified"
+  },
+  "local_sync_mode": {
+    "behavior": "Empty manifest_url and sheets_url select local mode without network/staging/live data changes. Configured failures still become health alerts.",
+    "unit_tests_passed": 4,
+    "browser_check": "Passed actual admin manual sync and Operations Center API: ЛОКАЛЬНО, no false sync alert, no browser page errors",
+    "owner_configuration": "Owner confirms all content is edited only in the administration panel"
   }
 }

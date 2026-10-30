@@ -81,6 +81,18 @@ def sync_bundle(
     pin_local_denominator: bool = False,
     pinned_schedules: list[str] | None = None,
 ) -> dict[str, Any]:
+    manifest_url = str(manifest_url or "").strip()
+    sheets_url = str(sheets_url or "").strip()
+    if not manifest_url:
+        if sheets_url:
+            raise ValueError("Для зовнішньої синхронізації вкажіть HTTPS URL маніфесту")
+        return {
+            "ok": None,
+            "status": "local",
+            "enabled": False,
+            "version": "",
+            "message": "Локальний режим: зовнішню синхронізацію не налаштовано",
+        }
     _https_only(manifest_url)
     manifest_raw = _download(manifest_url)
     manifest = json.loads(manifest_raw.decode("utf-8"))

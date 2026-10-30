@@ -18,7 +18,8 @@ def run():
     try:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(
-                executable_path=shutil.which("chromium") or shutil.which("chromium-browser"),
+                executable_path=shutil.which("chromium")
+                or shutil.which("chromium-browser"),
                 headless=True,
             )
             page = browser.new_page(viewport={"width": 1280, "height": 720})
@@ -34,15 +35,45 @@ def run():
             })""")
             assert self_check["hiddenBackdrop"] == "none", self_check
             assert self_check["scroll"] <= self_check["viewport"], self_check
-            passed("720p TV enables the lite profile without horizontal overflow or blurred media layers")
+            passed(
+                "720p TV enables the lite profile without horizontal overflow or blurred media layers"
+            )
             page.goto(SecurityHTTPTests.base + "/slideshow-preview?lite=1")
             wait_for(page, "document.documentElement.classList.contains('tv-lite')")
             assert page.locator("#previewFiles").count() == 1
             assert not errors, errors
-            passed("standalone holiday/weekend preview retains media controls under the lite profile")
+            passed(
+                "standalone holiday/weekend preview retains media controls under the lite profile"
+            )
             page.goto(SecurityHTTPTests.base + "/")
-            assert not page.evaluate("document.documentElement.classList.contains('tv-lite')")
+            assert not page.evaluate(
+                "document.documentElement.classList.contains('tv-lite')"
+            )
             passed("regular remote browsers keep the standard TV profile")
+            page.goto(SecurityHTTPTests.base + "/admin")
+            page.fill("#adminKey", SecurityHTTPTests.config["admin_key"])
+            page.click("#connect")
+            wait_for(
+                page, "document.getElementById('authState').textContent==='Підключено'"
+            )
+            with page.expect_response(
+                lambda response: response.url.endswith("/api/admin/action")
+            ) as response:
+                page.click('[data-action="sync"]')
+            assert response.value.json()["status"] == "local"
+            wait_for(
+                page,
+                "document.getElementById('statusGrid').textContent.includes('ЛОКАЛЬНО')",
+            )
+            dashboard = page.evaluate("fetch('/api/ops/dashboard').then(r => r.json())")
+            assert dashboard["state"]["sync"]["status"] == "local"
+            assert not any(
+                alert["code"] == "sync" for alert in dashboard["health_alerts"]
+            )
+            assert not errors, errors
+            passed(
+                "manual local-mode sync shows ЛОКАЛЬНО in admin and no false sync health alert in Operations Center"
+            )
             browser.close()
     finally:
         SecurityHTTPTests.tearDownClass()
