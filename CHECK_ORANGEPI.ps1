@@ -31,8 +31,8 @@ for s in lyceumtv.service lyceumtv-kiosk.service lyceumtv-watchdog.timer nginx.s
 done
 echo
 echo "=== KIOSK RESTARTS / PRIVILEGES ==="
-systemctl show lyceumtv-kiosk.service -p MainPID -p NRestarts -p ExecMainStatus -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
-kiosk_pid=$(systemctl show lyceumtv-kiosk.service -p MainPID --value)
+systemctl show --no-pager lyceumtv-kiosk.service -p MainPID -p NRestarts -p ExecMainStatus -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
+kiosk_pid=$(systemctl show --no-pager lyceumtv-kiosk.service -p MainPID --value)
 if [ "$kiosk_pid" -gt 0 ] 2>/dev/null && [ -r "/proc/$kiosk_pid/status" ]; then
   sed -n '/^Cap/p; /^NoNewPrivs:/p' "/proc/$kiosk_pid/status"
 fi

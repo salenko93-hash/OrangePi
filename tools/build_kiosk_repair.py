@@ -44,7 +44,7 @@ PYPROFILE
 sudo systemctl daemon-reload
 sudo systemctl restart lyceumtv-kiosk.service
 sleep 8
-systemctl show lyceumtv-kiosk.service -p ActiveState -p SubState -p NRestarts -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
+systemctl show --no-pager lyceumtv-kiosk.service -p ActiveState -p SubState -p NRestarts -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
 sudo journalctl -u lyceumtv-kiosk.service -n 12 --no-pager
 systemctl is-active --quiet lyceumtv-kiosk.service
 '@
