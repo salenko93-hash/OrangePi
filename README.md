@@ -1,21 +1,23 @@
-# LyceumTV 3.7.1 — Orange Pi PC
+# LyceumTV 3.7.2 — Orange Pi PC
 
 Окрема версія для **Orange Pi PC / Allwinner H3 / 1 ГБ RAM / armhf**. Основа — захищена LyceumTV 3.6.1. Сервер працює на самій Orange Pi; Raspberry Pi для цієї збірки не потрібна.
 
 Розклад, оголошення, тривоги, хвилина мовчання, фото по 3 секунди, відео й музика збережені. Графічний екран: **Cage + WebKitGTK 6.0 / GTK4**, без робочого столу та Snap/Chromium. Медіа відтворюються через GStreamer і окремий PulseAudio користувача kiosk.
 
-**[Завантажити готовий ZIP](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.1/LyceumTV-3.7.1-ORANGEPI-PC.zip)** — на сторінці файла натисніть стрілку **Download raw file**. Для приватного репозиторію потрібен вхід у GitHub. Розпакуйте весь архів.
+**[Завантажити готовий ZIP](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.2/LyceumTV-3.7.2-ORANGEPI-PC.zip)** — на сторінці файла натисніть стрілку **Download raw file**. Для приватного репозиторію потрібен вхід у GitHub. Розпакуйте весь архів.
 
-## Виправлення чорного екрана у встановленій 3.7.0
+## Виправлення чорного екрана у встановленій 3.7.x
 
-Якщо журнал показує `bwrap: Unexpected capabilities but not setuid`, завантажте [FIX_KIOSK_ORANGEPI.ps1](https://github.com/salenko93-hash/OrangePi/blob/main/FIX_KIOSK_ORANGEPI.ps1) через **Download raw file**. У PowerShell у папці цього файла:
+За журналом власника у 3.7.1 WebKit продовжував падати з `bwrap: Unexpected capabilities`, хоча service показував NoNewPrivileges=yes. У 3.7.2 сам процес браузера виконує capset: скидає permitted/effective/inheritable/ambient права, задає no_new_privs і перевіряє фактичний стан до завантаження GTK/WebKit. Sandbox збережено; файл bwrap і налаштування захисту ОС не змінюються.
+
+Завантажте [FIX_KIOSK_ORANGEPI_372.ps1](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.2/FIX_KIOSK_ORANGEPI_372.ps1) через **Download raw file**. У PowerShell у папці цього файла:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\FIX_KIOSK_ORANGEPI.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
+.\FIX_KIOSK_ORANGEPI_372.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
 ```
 
-Скрипт прибирає можливість набуття зайвих capabilities у kiosk, ремонтує власників .cache/.local та перезапускає лише екран/watchdog. Пакети, налаштування, ключі й медіа не замінюються; backend лишається 3.7.0. Повний архів нижче оновлює все до 3.7.1. Після застосування перевірте зображення на телевізорі; фізичне підтвердження ще потрібне.
+Скрипт атомарно оновлює root-owned браузерний host, зберігає попередній файл як kiosk_browser.py.before-3.7.2, ремонтує права профілю, перевіряє privilege API на платі та спостерігає за PID/перезапусками 20 секунд. При збої повертає помилку й показує свіжі журнали. Backend, ключі, розклад і медіа не змінюються. Фізична поява зображення після цього виправлення ще потребує перевірки власником.
 
 ## 1. Під’єднайте Orange Pi до мережі
 

@@ -1,6 +1,8 @@
 """Small GTK4/WebKitGTK TV host for Orange Pi PC; no desktop or Snap browser."""
 
 import argparse
+import ctypes
+import json
 import os
 from pathlib import Path
 import sys
@@ -8,6 +10,57 @@ import traceback
 from urllib.parse import urlsplit
 
 TV_URL = "http://127.0.0.1:8080/?screen=main-hall&lite=1"
+
+
+def browser_security_state():
+    keys = {"CapInh", "CapPrm", "CapEff", "CapAmb", "NoNewPrivs"}
+    return {
+        key: value.strip()
+        for line in Path("/proc/self/status").read_text().splitlines()
+        for key, separator, value in [line.partition(":")]
+        if separator and key in keys
+    }
+
+
+def drop_browser_privileges():
+    """Drop existing permitted caps too: no_new_privs alone prevents only gains."""
+
+    class Header(ctypes.Structure):
+        _fields_ = [("version", ctypes.c_uint32), ("pid", ctypes.c_int32)]
+
+    class Data(ctypes.Structure):
+        _fields_ = [
+            ("effective", ctypes.c_uint32),
+            ("permitted", ctypes.c_uint32),
+            ("inheritable", ctypes.c_uint32),
+        ]
+
+    libc = ctypes.CDLL(None, use_errno=True)
+    libc.prctl.argtypes = [ctypes.c_int, *([ctypes.c_ulong] * 4)]
+    libc.prctl.restype = ctypes.c_int
+    libc.capset.argtypes = [ctypes.POINTER(Header), ctypes.POINTER(Data)]
+    libc.capset.restype = ctypes.c_int
+
+    def checked(result, operation):
+        if result != 0:
+            raise OSError(ctypes.get_errno(), operation)
+
+    # PR_SET_NO_NEW_PRIVS, Linux capability ABI v3, PR_CAP_AMBIENT_CLEAR_ALL.
+    checked(libc.prctl(38, 1, 0, 0, 0), "Cannot set no_new_privs")
+    header, empty = Header(0x20080522, 0), (Data * 2)()
+    checked(
+        libc.capset(ctypes.byref(header), empty), "Cannot drop browser capabilities"
+    )
+    checked(libc.prctl(47, 4, 0, 0, 0), "Cannot clear ambient capabilities")
+    state = browser_security_state()
+    if state.get("NoNewPrivs") != "1" or any(
+        int(state.get(key, "-1"), 16) != 0
+        for key in ("CapInh", "CapPrm", "CapEff", "CapAmb")
+    ):
+        raise RuntimeError(
+            "Browser privilege drop could not be verified: " + str(state)
+        )
+    return state
 
 
 def allowed_navigation(uri):
@@ -50,7 +103,36 @@ def main(argv=None):
     parser.add_argument(
         "--check", action="store_true", help="Check GI packages; no display required"
     )
+    parser.add_argument(
+        "--check-privileges",
+        action="store_true",
+        help="Drop/check own Linux caps; no GUI",
+    )
     args = parser.parse_args(argv)
+    if not args.check:
+        if os.geteuid() == 0:
+            print("Do not run the TV browser as root.", file=sys.stderr)
+            return 1
+        before = {}
+        try:
+            before = browser_security_state()
+            after = drop_browser_privileges()
+        except (OSError, RuntimeError, ValueError) as error:
+            print(
+                "Browser privilege setup failed:",
+                error,
+                "initial state:",
+                before,
+                file=sys.stderr,
+            )
+            return 1
+        print(
+            "Browser privileges:",
+            json.dumps({"before": before, "after": after}),
+            flush=True,
+        )
+        if args.check_privileges:
+            return 0
     try:
         Gio, GLib, Gtk, WebKit = load_bindings()
     except (ImportError, ValueError) as error:
@@ -59,9 +141,6 @@ def main(argv=None):
     if args.check:
         print("GTK4 and WebKitGTK 6.0 bindings available")
         return 0
-    if os.geteuid() == 0:
-        print("Do not run the TV browser as root.", file=sys.stderr)
-        return 1
 
     class TVApplication(Gtk.Application):
         def __init__(self):

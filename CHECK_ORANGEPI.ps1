@@ -33,9 +33,20 @@ echo
 echo "=== KIOSK RESTARTS / PRIVILEGES ==="
 systemctl show --no-pager lyceumtv-kiosk.service -p MainPID -p NRestarts -p ExecMainStatus -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
 kiosk_pid=$(systemctl show --no-pager lyceumtv-kiosk.service -p MainPID --value)
+for attempt in 1 2 3 4 5 6 7 8; do
+  if [ "$kiosk_pid" -gt 0 ] 2>/dev/null && [ -r "/proc/$kiosk_pid/status" ]; then break; fi
+  sleep 1
+  kiosk_pid=$(systemctl show --no-pager lyceumtv-kiosk.service -p MainPID --value)
+done
 if [ "$kiosk_pid" -gt 0 ] 2>/dev/null && [ -r "/proc/$kiosk_pid/status" ]; then
   sed -n '/^Cap/p; /^NoNewPrivs:/p' "/proc/$kiosk_pid/status"
+else
+  echo "No live kiosk PID captured: service is stopped or between restarts."
 fi
+for browser_pid in $(pgrep -u lyceumtv-kiosk -f kiosk_browser.py); do
+  echo "Browser PID=$browser_pid"
+  sudo sed -n '/^Cap/p; /^NoNewPrivs:/p' "/proc/$browser_pid/status" || true
+done
 if command -v getcap >/dev/null 2>&1; then
   getcap /usr/bin/bwrap /usr/bin/cage /usr/bin/python3 2>/dev/null || true
 fi

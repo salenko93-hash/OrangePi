@@ -15,6 +15,7 @@ check = (
     .split("\ndef main():", 1)[0]
     .rstrip()
 )
+browser = (root / "scripts/kiosk_browser.py").read_text().rstrip()
 header = """param(
     [string]$BoardHost = "192.168.0.160",
     [string]$BoardUser = "admin"
@@ -26,11 +27,12 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Repairing kiosk privilege/cache settings on ${BoardUser}@${BoardHost}..."
+Write-Host "Repairing kiosk 3.7.2 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 sudo -v
-trap 'rm -f -- "$0"; sudo systemctl start lyceumtv-watchdog.timer' EXIT
+new_host=""
+trap 'if [ -n "$new_host" ]; then sudo rm -f -- "$new_host"; fi; rm -f -- "$0"; sudo systemctl start lyceumtv-watchdog.timer' EXIT
 sudo systemctl stop lyceumtv-watchdog.timer lyceumtv-watchdog.service lyceumtv-kiosk.service
 sudo install -d -o root -g root -m 755 /etc/systemd/system/lyceumtv-kiosk.service.d
 sudo tee /etc/systemd/system/lyceumtv-kiosk.service.d/40-lyceumtv-capabilities.conf >/dev/null <<'UNIT'
@@ -47,6 +49,23 @@ if account.pw_uid == 0 or account.pw_dir != "/var/lib/lyceumtv-kiosk":
     raise SystemExit("Refusing unexpected kiosk account/home directory")
 prepare_profile(account.pw_dir, account.pw_uid, account.pw_gid)
 PYPROFILE
+if loginctl show-user --no-pager lyceumtv-kiosk >/dev/null 2>&1; then
+  sudo loginctl terminate-user lyceumtv-kiosk
+fi
+sudo test -d /usr/local/lib/lyceumtv
+if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.2 ]; then
+  sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.2
+fi
+new_host=$(sudo mktemp /usr/local/lib/lyceumtv/.kiosk-browser-XXXXXX)
+sudo tee "$new_host" >/dev/null <<'PYHOST'
+"""
+install_browser = """
+PYHOST
+sudo chown root:root "$new_host"
+sudo chmod 644 "$new_host"
+sudo mv -f -- "$new_host" /usr/local/lib/lyceumtv/kiosk_browser.py
+new_host=""
+sudo -u lyceumtv-kiosk /usr/bin/python3 -I /usr/local/lib/lyceumtv/kiosk_browser.py --check-privileges
 sudo systemctl daemon-reload
 started=$(date +%s)
 sudo systemctl restart lyceumtv-kiosk.service
@@ -88,6 +107,15 @@ finally {
 Write-Host "Kiosk settings applied. Check the TV picture; this does not update the backend version."
 """
 (root / "FIX_KIOSK_ORANGEPI.ps1").write_text(
-    header + profile + "\n" + footer + check + "\n" + verification
+    header
+    + profile
+    + "\n"
+    + footer
+    + browser
+    + "\n"
+    + install_browser
+    + check
+    + "\n"
+    + verification
 )
 print("Generated standalone repair from canonical kiosk_profile.py")

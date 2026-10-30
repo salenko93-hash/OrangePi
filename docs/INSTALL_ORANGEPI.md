@@ -147,10 +147,10 @@ Import-Certificate -FilePath .\lyceumtv-ca.crt -CertStoreLocation Cert:\CurrentU
 
 ## Armbian: bwrap завершується з Unexpected capabilities
 
-Це відмова sandbox helper при отриманні capabilities звичайним користувачем. У 3.7.1 kiosk має NoNewPrivileges=true та AmbientCapabilities=. File capabilities не надають йому додаткових прав. Штатний sandbox WebKit зберігається.
+Це відмова sandbox helper при отриманні capabilities звичайним користувачем. У 3.7.1 було додано налаштування: kiosk має NoNewPrivileges=true та AmbientCapabilities=. File capabilities не надають йому додаткових прав. Штатний sandbox WebKit зберігається.
 
-Для вже встановленої 3.7.0 використайте FIX_KIOSK_ORANGEPI.ps1 із README або повний установник 3.7.1. Виправлення також задає власника/0700 усім батьківським каталогам профілю. Наявні файли профілю не видаляються; symlink замість очікуваного каталогу зупиняє операцію.
+Власник повідомив, що самого налаштування 3.7.1 було недостатньо. Для вже встановленої 3.7.x використайте новий FIX_KIOSK_ORANGEPI_372.ps1 із README або повний установник 3.7.2. Виправлення також задає власника/0700 усім батьківським каталогам профілю. Наявні файли профілю не видаляються; symlink замість очікуваного каталогу зупиняє операцію.
 
 Якщо зображення все ще немає, запустіть CHECK_ORANGEPI.ps1 із нової версії. Він показує NoNewPrivs/CapEff фактичного процесу та лічильник перезапусків, а також журнал. Результат active під час циклу перезапусків не означає, що WebKit встиг запуститися.
 
-Bounding set залишено типовим: порожній набір може спричинити EPERM при execve capability-marked системного бінарника ще до застосування обмеження no_new_privs. NoNewPrivileges не дозволяє набуття нових прав через file capabilities; ambient-набір порожній. Очікуваний фактичний стан kiosk — NoNewPrivs: 1 і нульові CapEff/CapPrm.
+Bounding set залишено типовим: порожній набір може спричинити EPERM при execve capability-marked системного бінарника ще до застосування обмеження no_new_privs. NoNewPrivileges не дозволяє набуття нових прав через file capabilities; ambient-набір порожній. У 3.7.2 browser host додатково виконує capset/prctl самостійно до GTK/WebKit. Очікуваний фактичний стан саме браузера — NoNewPrivs: 1 і нульові CapEff/CapPrm.
