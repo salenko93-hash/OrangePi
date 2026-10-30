@@ -6,6 +6,8 @@ import struct
 import tempfile
 
 THEME = "lyceumtv-invisible"
+THEME_NAMES = (THEME, "default", "left_ptr")
+SEARCH_PATH = "usr/local/share/lyceumtv-cursors"
 CURSOR_NAMES = (
     "left_ptr",
     "default",
@@ -83,29 +85,38 @@ def write_atomic(path, content):
 
 def install(root=Path("/")):
     root = Path(root)
-    icons = root / "usr/local/share/icons"
-    theme = icons / THEME
+    icons = root / SEARCH_PATH
     dropin = root / "etc/systemd/system/lyceumtv-kiosk.service.d"
-    for directory in (icons, theme, theme / "cursors", dropin):
+    directories = [icons, dropin]
+    for theme_name in THEME_NAMES:
+        theme = icons / theme_name
+        directories.extend((theme, theme / "cursors"))
+    for directory in directories:
         if directory.is_symlink():
             raise RuntimeError(
                 "Refusing linked configuration directory: " + str(directory)
             )
         directory.mkdir(parents=True, exist_ok=True)
         directory.chmod(0o755)
-    for name in CURSOR_NAMES:
-        write_atomic(theme / "cursors" / name, transparent_cursor())
-    write_atomic(
-        theme / "index.theme",
-        b"[Icon Theme]\nName=LyceumTV invisible cursor\nDirectories=cursors\n",
-    )
+    # Cage 0.2.1 passes NULL as the pointer theme to wlroots, which loads
+    # "default" without consulting XCURSOR_THEME. XWayland uses "left_ptr".
+    # Both aliases live in this service's private search path, never in the
+    # global /usr/share/icons/default theme used by other sessions.
+    for theme_name in THEME_NAMES:
+        theme = icons / theme_name
+        for name in CURSOR_NAMES:
+            write_atomic(theme / "cursors" / name, transparent_cursor())
+        write_atomic(
+            theme / "index.theme",
+            b"[Icon Theme]\nName=LyceumTV invisible cursor\nDirectories=cursors\n",
+        )
     # Cage inherits these variables from this service, independently of desktops.
     write_atomic(
         dropin / "50-cursor.conf",
         (
             "[Service]\n"
             f"Environment=XCURSOR_THEME={THEME}\n"
-            "Environment=XCURSOR_PATH=/usr/local/share/icons:/usr/share/icons:/usr/share/pixmaps\n"
+            f"Environment=XCURSOR_PATH=/{SEARCH_PATH}\n"
         ).encode(),
     )
 
@@ -114,7 +125,7 @@ def main():
     if os.geteuid() != 0:
         raise SystemExit("Run this installer with sudo.")
     install()
-    print("Installed invisible cursor theme for lyceumtv-kiosk.service only.")
+    print("Installed cursor fix v2: private default theme for Cage 0.2.1.")
 
 
 if __name__ == "__main__":

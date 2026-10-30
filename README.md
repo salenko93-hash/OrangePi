@@ -8,7 +8,9 @@
 
 ## Приховування курсора на телевізорі
 
-Курсор може малювати Cage навіть без підключеної миші. Для вже встановленого застосунку завантажте [HIDE_CURSOR_ORANGEPI.ps1](https://github.com/salenko93-hash/OrangePi/blob/main/HIDE_CURSOR_ORANGEPI.ps1) кнопкою **Download raw file**. Відкрийте PowerShell у папці завантаженого файла:
+Курсор може малювати Cage навіть без підключеної миші. Попереднє виправлення не спрацювало на платі: Cage 0.2.1 передає wlroots порожню назву теми, а wlroots завантажує `default`, ігноруючи `XCURSOR_THEME`. Виправлення v2 створює прозору `default` в окремому каталозі, який бачить лише служба телевізора. Відмова старого варіанта й робота нового відтворені через бібліотеку wlroots.
+
+Для вже встановленого застосунку завантажте оновлений [HIDE_CURSOR_ORANGEPI.ps1](https://github.com/salenko93-hash/OrangePi/blob/main/HIDE_CURSOR_ORANGEPI.ps1) кнопкою **Download raw file** й замініть попередній файл. На початку запуску має бути **Applying cursor fix v2**. Відкрийте PowerShell у папці завантаженого файла:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass

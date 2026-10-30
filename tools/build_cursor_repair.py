@@ -26,7 +26,7 @@ check = (
     .rstrip()
 )
 payload = (
-    """Write-Host "Hiding the TV cursor on ${BoardUser}@${BoardHost}..."
+    """Write-Host "Applying cursor fix v2 (Cage default theme) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 trap 'rm -f -- "$0"' EXIT
@@ -36,6 +36,7 @@ sudo /usr/bin/python3 -I - <<'PYCURSOR'
     + source
     + """
 PYCURSOR
+sudo -u lyceumtv-kiosk test -r /usr/local/share/lyceumtv-cursors/default/cursors/left_ptr
 sudo systemctl daemon-reload
 started=$(date +%s)
 sudo systemctl restart lyceumtv-kiosk.service
