@@ -3,11 +3,21 @@
 import os
 from pathlib import Path
 import struct
+import stat
 import tempfile
 
 THEME = "lyceumtv-invisible"
 THEME_NAMES = (THEME, "default", "left_ptr")
 SEARCH_PATH = "usr/local/share/lyceumtv-cursors"
+BLOCK_BEGIN = "# BEGIN LyceumTV cursor environment"
+BLOCK_END = "# END LyceumTV cursor environment"
+LAUNCHER_BLOCK = f"""{BLOCK_BEGIN}
+export XCURSOR_THEME={THEME}
+export XCURSOR_PATH=/{SEARCH_PATH}
+export WLR_NO_HARDWARE_CURSORS=1
+echo "TV cursor: theme=$XCURSOR_THEME path=$XCURSOR_PATH software=$WLR_NO_HARDWARE_CURSORS"
+{BLOCK_END}
+"""
 CURSOR_NAMES = (
     "left_ptr",
     "default",
@@ -71,12 +81,12 @@ def transparent_cursor():
     ) + struct.pack("<10I", 36, 0xFFFD0002, 24, 1, 1, 1, 0, 0, 0, 0)
 
 
-def write_atomic(path, content):
+def write_atomic(path, content, mode=0o644):
     fd, temporary = tempfile.mkstemp(prefix=".cursor-", dir=path.parent)
     try:
         with os.fdopen(fd, "wb") as stream:
             stream.write(content)
-            os.fchmod(stream.fileno(), 0o644)
+            os.fchmod(stream.fileno(), mode)
         os.replace(temporary, path)
     finally:
         if os.path.exists(temporary):
@@ -117,15 +127,51 @@ def install(root=Path("/")):
             "[Service]\n"
             f"Environment=XCURSOR_THEME={THEME}\n"
             f"Environment=XCURSOR_PATH=/{SEARCH_PATH}\n"
+            "Environment=WLR_NO_HARDWARE_CURSORS=1\n"
         ).encode(),
     )
+
+
+def configure_launcher(path):
+    """Set the cursor environment before Cage even without inherited settings."""
+    path = Path(path)
+    if not stat.S_ISREG(path.lstat().st_mode):
+        raise RuntimeError("Refusing a linked/non-regular kiosk launcher")
+    original = path.read_text()
+    source = original
+    if BLOCK_BEGIN in source or BLOCK_END in source:
+        if source.count(BLOCK_BEGIN) != 1 or source.count(BLOCK_END) != 1:
+            raise RuntimeError("Unexpected cursor block in the kiosk launcher")
+        before, block = source.split(BLOCK_BEGIN, 1)
+        if BLOCK_END not in block:
+            raise RuntimeError("Incomplete cursor block in the kiosk launcher")
+        source = before.rstrip("\n") + "\n" + block.split(BLOCK_END, 1)[1].lstrip("\n")
+    anchor = "set -Eeuo pipefail\n"
+    if (
+        not source.startswith("#!")
+        or anchor not in source
+        or "/usr/bin/cage" not in source
+    ):
+        raise RuntimeError("Unrecognized kiosk launcher; leaving it unchanged")
+    before, after = source.split(anchor, 1)
+    updated = before + anchor + "\n" + LAUNCHER_BLOCK + "\n" + after.lstrip("\n")
+    # Canonical and previously patched launchers converge without appending blocks.
+    if updated != original:
+        backup = path.with_name(path.name + ".before-cursor-v3")
+        if not backup.exists():
+            write_atomic(backup, original.encode(), mode=0o755)
+        write_atomic(path, updated.encode(), mode=0o755)
 
 
 def main():
     if os.geteuid() != 0:
         raise SystemExit("Run this installer with sudo.")
     install()
-    print("Installed cursor fix v2: private default theme for Cage 0.2.1.")
+    launcher = Path("/usr/local/lib/lyceumtv/launch-kiosk.sh")
+    if launcher.lstat().st_uid != 0:
+        raise SystemExit("Refusing a kiosk launcher not owned by root")
+    configure_launcher(launcher)
+    print("Installed cursor fix v3: startup environment and software cursor.")
 
 
 if __name__ == "__main__":

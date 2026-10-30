@@ -26,7 +26,7 @@ check = (
     .rstrip()
 )
 payload = (
-    """Write-Host "Applying cursor fix v2 (Cage default theme) on ${BoardUser}@${BoardHost}..."
+    """Write-Host "Applying cursor fix v3 (first startup, software cursor) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 trap 'rm -f -- "$0"' EXIT
@@ -52,6 +52,7 @@ except (OSError, RuntimeError, subprocess.SubprocessError) as error:
 PYCHECK
 then
   echo "Kiosk process remained stable for 20 seconds."
+  sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 12 --no-pager
 else
   sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 30 --no-pager
   exit 1

@@ -55,7 +55,7 @@ class KioskLauncherTests(unittest.TestCase):
         for name, code in {
             "curl": "#!/bin/sh\nexit 0\n",
             "dbus-run-session": '#!/bin/sh\nshift\nexec "$@"\n',
-            "cage": '#!/bin/sh\nprintf "%s\\n" "$XDG_RUNTIME_DIR" > "$KIOSK_TEST_RECORD"\nprintf "%s\\n" "$@" > "${KIOSK_TEST_RECORD}.args"\n',
+            "cage": '#!/bin/sh\nprintf "%s\\n" "$XDG_RUNTIME_DIR" > "$KIOSK_TEST_RECORD"\nprintf "%s\\n" "$@" > "${KIOSK_TEST_RECORD}.args"\nprintf "%s\\n" "$XCURSOR_THEME" "$XCURSOR_PATH" "$WLR_NO_HARDWARE_CURSORS" > "${KIOSK_TEST_RECORD}.cursor"\n',
         }.items():
             path = self.bin / name
             path.write_text(code)
@@ -72,8 +72,12 @@ class KioskLauncherTests(unittest.TestCase):
         self.script = self.root / "launch.sh"
         self.script.write_text(script)
 
-    def launch(self):
+    def launch(self, cursor_environment=None):
         env = os.environ.copy()
+        for name in ("XCURSOR_THEME", "XCURSOR_PATH", "WLR_NO_HARDWARE_CURSORS"):
+            env.pop(name, None)
+        if cursor_environment:
+            env.update(cursor_environment)
         env.update(
             XDG_RUNTIME_DIR=str(self.runtime),
             KIOSK_TEST_RECORD=str(self.marker),
@@ -95,6 +99,23 @@ class KioskLauncherTests(unittest.TestCase):
         args = Path(str(self.marker) + ".args").read_text().splitlines()
         self.assertEqual(args[args.index("-m") + 1], "last")
         self.assertFalse(list(self.runtime.glob(".lyceumtv-runtime-*")))
+
+    def test_first_process_launch_and_conflicting_inherited_cursor_settings(self):
+        self.runtime.mkdir(mode=0o700)
+        for inherited in (
+            None,
+            {
+                "XCURSOR_THEME": "Adwaita",
+                "XCURSOR_PATH": "/usr/share/icons",
+                "WLR_NO_HARDWARE_CURSORS": "0",
+            },
+        ):
+            result = self.launch(inherited)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                Path(str(self.marker) + ".cursor").read_text().splitlines(),
+                ["lyceumtv-invisible", "/usr/local/share/lyceumtv-cursors", "1"],
+            )
 
     def test_missing_runtime_fails_before_compositor_starts(self):
         result = self.launch()

@@ -19,6 +19,25 @@ spec.loader.exec_module(cursor)
 
 
 class CursorThemeTests(unittest.TestCase):
+    def test_existing_launcher_upgrade_preserves_content_and_original_backup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "launch-kiosk.sh"
+            original = "#!/bin/bash\nset -Eeuo pipefail\n# local setting\nexec /usr/bin/cage -m last -- /local/tv\n"
+            path.write_text(original)
+            cursor.configure_launcher(path)
+            upgraded = path.read_text()
+            cursor.configure_launcher(path)
+            self.assertEqual(path.read_text(), upgraded)
+            self.assertEqual(upgraded.count(cursor.BLOCK_BEGIN), 1)
+            self.assertIn(
+                "# local setting\nexec /usr/bin/cage -m last -- /local/tv\n", upgraded
+            )
+            self.assertEqual(path.stat().st_mode & 0o777, 0o755)
+            backup = path.with_name(path.name + ".before-cursor-v3")
+            self.assertEqual(backup.read_text(), original)
+            canonical = (ROOT / "scripts/launch-kiosk.sh").read_text()
+            self.assertIn(cursor.LAUNCHER_BLOCK, canonical)
+
     def test_theme_is_readable_idempotent_and_scoped_to_kiosk(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

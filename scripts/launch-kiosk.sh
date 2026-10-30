@@ -2,6 +2,13 @@
 # Root-owned entry point; WebKit and Cage run as the dedicated kiosk user.
 set -Eeuo pipefail
 
+# BEGIN LyceumTV cursor environment
+export XCURSOR_THEME=lyceumtv-invisible
+export XCURSOR_PATH=/usr/local/share/lyceumtv-cursors
+export WLR_NO_HARDWARE_CURSORS=1
+echo "TV cursor: theme=$XCURSOR_THEME path=$XCURSOR_PATH software=$WLR_NO_HARDWARE_CURSORS"
+# END LyceumTV cursor environment
+
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 if [[ ! -d "$XDG_RUNTIME_DIR" || ! -w "$XDG_RUNTIME_DIR" || ! -x "$XDG_RUNTIME_DIR" ]]; then
   echo "Kiosk cannot write XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR. Check ProtectHome=tmpfs and BindPaths in lyceumtv-kiosk.service." >&2

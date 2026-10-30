@@ -5,7 +5,7 @@
   "observed_user_os": "Armbian Community 26.11.0-trunk.108 / Ubuntu Resolute / kernel 6.18.57-current-sunxi",
   "target_host": "192.168.0.160",
   "ssh_user": "admin",
-  "unit_tests_passed": 103,
+  "unit_tests_passed": 105,
   "javascript_runtime_checks_passed": 8,
   "javascript_files_checked": 16,
   "browser_security_checks_passed": 9,
@@ -96,11 +96,14 @@
     "hardware_result": "Owner photo confirms full holiday page (КАНІКУЛИ / Осінні канікули) on the physical Sharp TV; visible cursor remains."
   },
   "post_release_cursor": {
-    "method": "Cursor fix v2: private XCURSOR_PATH with transparent named/default/left_ptr themes; Cage 0.2.1 NULL theme is handled without modifying global desktop themes",
+    "method": "Cursor fix v3: private transparent default theme, explicit environment block before every Cage exec, and WLR_NO_HARDWARE_CURSORS=1",
     "native_test": "Actual wlroots 0.18 reproduces v1 opaque built-in fallback despite XCURSOR_THEME. v2 resolves NULL/default/left_ptr/named themes to transparent 1x1 pixels for 5 cursor names at 4 sizes; libXcursor decode also passes",
-    "targeted_tests_passed": 3,
-    "hardware_result": "Awaiting owner verification of v2 cursor hiding; full holiday page already confirmed by owner photo",
-    "project_verifier": "Passed 103 Python tests including actual wlroots regression, 16 JavaScript syntax checks and 8 JavaScript runtime checks",
-    "v1_owner_result": "Owner reports cursor still visible after the first helper"
+    "targeted_tests_passed": 10,
+    "hardware_result": "Awaiting owner verification of v3 after power-on; no confirmed root cause for boot recurrence is claimed",
+    "project_verifier": "Passed 105 Python tests, 16 JavaScript syntax checks and 8 JavaScript runtime checks",
+    "v1_owner_result": "Owner reports cursor still visible after the first helper",
+    "v2_owner_result": "Owner initially confirmed cursor hidden, then reported it remains after powering on Orange Pi; boot journal has not been supplied",
+    "v3_checks": "Actual launcher process passes all three cursor variables even with an empty or conflicting inherited cursor environment. Upgrade is idempotent, preserves local launcher content and keeps the original backup. Existing native wlroots NULL/default theme checks still pass.",
+    "wlroots_019_option_check": "Extracted Debian wlroots 0.19.3 shared library includes WLR_NO_HARDWARE_CURSORS and the forcing-software-cursors implementation message; physical H3 driver behavior is not claimed verified"
   }
 }
