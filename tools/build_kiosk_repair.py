@@ -29,7 +29,7 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Repairing kiosk 3.7.4 (Native HDMI + GTK cursor) on ${BoardUser}@${BoardHost}..."
+Write-Host "Repairing kiosk 3.7.4 (Cage pointer refresh after page load) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 sudo -v
@@ -109,6 +109,20 @@ else
   exit 1
 fi
 systemctl show --no-pager lyceumtv-kiosk.service -p ActiveState -p SubState -p NRestarts -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
+confirmed=false
+for attempt in $(seq 1 20); do
+  if sudo journalctl -b "_UID=$kiosk_uid" --since "@$started" --no-pager -q -n 1 --grep='Cursor seat refresh: virtual pointer removed' >/dev/null; then
+    confirmed=true
+    break
+  fi
+  sleep 1
+done
+if [ "$confirmed" != true ]; then
+  echo "The browser did not confirm pointer refresh. Send the log below."
+  sudo journalctl -b "_UID=$kiosk_uid" --since "@$started" -n 60 --no-pager
+  exit 1
+fi
+echo "Cursor seat refresh was confirmed by the running browser; check the TV picture."
 sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 12 --no-pager
 systemctl is-active --quiet lyceumtv-kiosk.service
 '@

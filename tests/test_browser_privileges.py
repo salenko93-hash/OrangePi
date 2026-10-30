@@ -20,6 +20,11 @@ spec.loader.exec_module(browser)
 
 
 class BrowserPrivilegeTests(unittest.TestCase):
+    def test_pointer_refresh_refuses_root_before_opening_the_display(self):
+        with patch.object(browser.os, "geteuid", return_value=0):
+            with self.assertRaisesRegex(RuntimeError, "root"):
+                browser.refresh_seat_cursor()
+
     def test_uninitialized_window_does_not_receive_a_fullscreen_request(self):
         class Window:
             def set_decorated(self, decorated):

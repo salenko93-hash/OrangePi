@@ -136,7 +136,17 @@
     "full_project_tests_passed": 113,
     "javascript_runtime_checks_passed": 8,
     "repair": "Current FIX_KIOSK_ORANGEPI.ps1 embeds canonical cursor installer, browser host and native display helper; backups, atomic root-owned file replacement and 20-second stability check retained",
-    "hardware_result": "Owner reports visible mouse arrow remains after repair and TV power cycling; fresh photo shows arrow over the holiday title. Updated installed host/display helper fingerprints have not yet been verified.",
+    "hardware_result": "V2 owner log confirms updated GTK host and native-mode helper are installed, native 1080p/50 is stable without disconnect/reconnect, GTK cursor none is logged; visible arrow remains by owner report",
     "archive": "Published ZIP 3.7.4 remains immutable and does not include this later patch"
+  },
+  "post_release_seat_refresh": {
+    "owner_source": "LyceumTV-HDMI-20261030-152246.txt and fresh photo of mouse arrow",
+    "verified_on_board": "Kiosk UID1001 loads 1x1 fully transparent default/named cursor images from wlroots0.19; installed host markers and runtime GTK cursor theme are correct. No repeated HDMI disconnections in this captured boot.",
+    "change": "After each WebKit LoadEvent.FINISHED, use same-UID Wayland virtual pointer protocol to add a temporary pointer, emit zero relative motion and remove it. Cage updates seat capabilities and unsets its cursor image.",
+    "bounds": "No clicks, scroll, coordinate changes, uinput or root GUI. Private compositor socket must be owned by kiosk UID; request budget 2 seconds; unavailable protocol/error is logged without terminating the browser.",
+    "real_cage_test": "Cage0.2.0/wlroots0.18 + GTK4.18: window mapped, refresh true, protocol trace confirms create, motion(0,0), destroy and seat pointer capability removed. v0.2.1 source has the same pointer-destroy/update_capabilities path. Exact ARM WebKit rendering is not reproduced in cloud.",
+    "full_project_tests_passed": 115,
+    "repair_verification": "20 seconds stable process plus explicit running-browser journal confirmation required; shell/Python payload syntax and canonical-host equality checked",
+    "physical_result": "Awaiting owner verification of this new seat-refresh behavior; no physical cursor success claimed"
   }
 }

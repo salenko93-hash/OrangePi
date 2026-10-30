@@ -35,6 +35,18 @@ def run():
             window.fullscreen()
         host.present_kiosk_window(window)
 
+        def refresh_cursor():
+            try:
+                refreshed = host.refresh_seat_cursor()
+            except Exception as error:
+                print("PROBE_CURSOR_REFRESH_ERROR=" + str(error), flush=True)
+                refreshed = False
+            observed.append(refreshed)
+            print("PROBE_CURSOR_REFRESH=" + str(refreshed), flush=True)
+            return False
+
+        GLib.timeout_add(300, refresh_cursor)
+
         def finish():
             observed.append(window.get_mapped())
             print("PROBE_MAPPED=" + str(window.get_mapped()), flush=True)
@@ -55,7 +67,7 @@ def run():
 
     app.connect("activate", activate)
     status = app.run([sys.argv[0]])
-    return status if status else 0 if observed == [True] else 1
+    return status if status else 0 if observed == [True, True] else 1
 
 
 if __name__ == "__main__":

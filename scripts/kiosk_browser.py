@@ -5,7 +5,10 @@ import ctypes
 import json
 import os
 from pathlib import Path
+import socket
+import struct
 import sys
+import time
 import traceback
 from urllib.parse import urlsplit
 
@@ -108,6 +111,87 @@ def configure_gtk_cursor(Gtk):
         settings.set_property("gtk-cursor-theme-name", "lyceumtv-invisible")
 
 
+def refresh_seat_cursor():
+    """Refresh Cage's seat after page load, without clicks or pointer movement.
+
+    A temporary wlr virtual pointer emits zero relative motion, then is removed.
+    Cage's pointer-destroy handler unsets its cursor image when no mouse remains.
+    This uses the compositor socket as the kiosk user; no uinput/root is needed.
+    """
+    if os.geteuid() == 0:
+        raise RuntimeError("Do not refresh the kiosk pointer as root")
+    runtime = Path(os.environ["XDG_RUNTIME_DIR"]).resolve()
+    name = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
+    path = Path(name) if os.path.isabs(name) else runtime / name
+    if path.parent.resolve() != runtime or path.stat().st_uid != os.geteuid():
+        raise RuntimeError("Unexpected compositor socket owner or location")
+    deadline = time.monotonic() + 2
+    pending = bytearray()
+    globals_by_name = {}
+
+    def words(*values):
+        return struct.pack("=" + "I" * len(values), *values)
+
+    def string(value):
+        raw = value.encode("ascii") + b"\0"
+        return words(len(raw)) + raw + b"\0" * (-len(raw) % 4)
+
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(2)
+        connection.connect(str(path))
+
+        def send(object_id, opcode, body=b""):
+            connection.sendall(
+                words(object_id, ((8 + len(body)) << 16) | opcode) + body
+            )
+
+        def roundtrip(callback_id):
+            send(1, 0, words(callback_id))  # wl_display.sync
+            while True:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Compositor pointer refresh timed out")
+                if len(pending) >= 8:
+                    object_id, header = struct.unpack("=II", pending[:8])
+                    size, opcode = header >> 16, header & 0xFFFF
+                    if size < 8 or size > 65532 or size % 4:
+                        raise RuntimeError("Invalid Wayland event size")
+                    if len(pending) >= size:
+                        body = bytes(pending[8:size])
+                        del pending[:size]
+                        if object_id == 1 and opcode == 0:
+                            raise RuntimeError("Compositor rejected pointer refresh")
+                        if object_id == 2 and opcode == 0:
+                            global_id, length = struct.unpack("=II", body[:8])
+                            offset = 8 + ((length + 3) & ~3)
+                            if not (1 <= length <= 1024 and len(body) >= offset + 4):
+                                raise RuntimeError("Invalid Wayland global event")
+                            interface = body[8 : 8 + length - 1].decode("ascii")
+                            globals_by_name[interface] = global_id
+                        if object_id == callback_id and opcode == 0:
+                            return
+                        continue
+                connection.settimeout(max(0.01, deadline - time.monotonic()))
+                packet = connection.recv(65536)
+                if not packet:
+                    raise RuntimeError("Compositor disconnected during pointer refresh")
+                pending.extend(packet)
+
+        send(1, 1, words(2))  # wl_display.get_registry
+        roundtrip(3)
+        interface = "zwlr_virtual_pointer_manager_v1"
+        if interface not in globals_by_name:
+            return False
+        send(2, 0, words(globals_by_name[interface]) + string(interface) + words(1, 4))
+        send(4, 0, words(0, 5))  # create_virtual_pointer, default seat
+        roundtrip(6)
+        send(5, 0, words(int(time.monotonic() * 1000) & 0xFFFFFFFF, 0, 0))
+        send(5, 4)  # frame; no button/scroll/absolute-motion requests
+        send(5, 8)  # destroy virtual pointer; Cage refreshes seat capabilities
+        send(4, 1)  # destroy manager binding
+        roundtrip(7)
+    return True
+
+
 def present_kiosk_window(window):
     # Cage fills its output itself. Calling fullscreen before the initial commit
     # hits an uninitialized xdg_surface in Cage 0.2.1 / wlroots 0.19.
@@ -169,6 +253,7 @@ def main(argv=None):
             )
             self.failed = False
             self.retry = 0
+            self.cursor_refresh = 0
             self.connect("activate", self.activate_tv)
 
         def activate_tv(self, _application):
@@ -207,6 +292,7 @@ def main(argv=None):
             self.view.connect("create", lambda *_args: None)
             self.view.connect("web-process-terminated", self.process_terminated)
             self.view.connect("load-failed", self.load_failed)
+            self.view.connect("load-changed", self.load_changed)
             self.view.set_cursor_from_name("none")
             self.window = Gtk.ApplicationWindow(
                 application=self, title="LyceumTV — Orange Pi"
@@ -219,6 +305,27 @@ def main(argv=None):
                 flush=True,
             )
             self.view.load_uri(TV_URL)
+
+        def load_changed(self, _view, event):
+            if event == WebKit.LoadEvent.FINISHED and not self.cursor_refresh:
+                self.cursor_refresh = GLib.timeout_add(150, self.refresh_cursor)
+
+        def refresh_cursor(self):
+            self.cursor_refresh = 0
+            try:
+                refreshed = refresh_seat_cursor()
+                print(
+                    "Cursor seat refresh: "
+                    + (
+                        "virtual pointer removed"
+                        if refreshed
+                        else "protocol unavailable"
+                    ),
+                    flush=True,
+                )
+            except (OSError, RuntimeError, KeyError, ValueError, struct.error) as error:
+                print("Cursor seat refresh unavailable:", error, flush=True)
+            return GLib.SOURCE_REMOVE
 
         def decide_policy(self, _view, decision, kind):
             if kind in (
