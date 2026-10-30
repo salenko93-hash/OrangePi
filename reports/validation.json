@@ -52,5 +52,11 @@
     "failure": "WebKit kiosk restarted with status 134 and bwrap: Unexpected capabilities but not setuid, old file caps config?",
     "cache": "Mesa could not create .cache/mesa_shader_cache because a parent directory was not writable",
     "fix_result": "Awaiting user verification of the 3.7.1 repair on the physical board"
+  },
+  "post_release_maintenance": {
+    "pager": "82be9d3: systemctl show --no-pager in repair and diagnostics",
+    "stability_check": "Rejects changes in MainPID/NRestarts during 20 seconds, even while ActiveState stays active; reports only journal entries after this repair restart",
+    "targeted_tests_passed": 7,
+    "hardware_status": "Owner reports no picture after 3.7.1 repair; further file/runtime capability diagnostics are required. No successful hardware fix is claimed."
   }
 }

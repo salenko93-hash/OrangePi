@@ -9,6 +9,12 @@ profile = (
     .split("\ndef main():", 1)[0]
     .rstrip()
 )
+check = (
+    (root / "scripts/kiosk_stability.py")
+    .read_text()
+    .split("\ndef main():", 1)[0]
+    .rstrip()
+)
 header = """param(
     [string]$BoardHost = "192.168.0.160",
     [string]$BoardUser = "admin"
@@ -42,10 +48,27 @@ if account.pw_uid == 0 or account.pw_dir != "/var/lib/lyceumtv-kiosk":
 prepare_profile(account.pw_dir, account.pw_uid, account.pw_gid)
 PYPROFILE
 sudo systemctl daemon-reload
+started=$(date +%s)
 sudo systemctl restart lyceumtv-kiosk.service
-sleep 8
+if /usr/bin/python3 -I - <<'PYCHECK'
+"""
+verification = """
+try:
+    wait_for_stable()
+except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+    print(str(error), file=sys.stderr)
+    raise SystemExit(1)
+PYCHECK
+then
+  echo "Kiosk process remained stable for 20 seconds; check the TV picture."
+else
+  sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 25 --no-pager
+  kiosk_uid=$(id -u lyceumtv-kiosk)
+  sudo journalctl -b "_UID=$kiosk_uid" --since "@$started" -n 60 --no-pager
+  exit 1
+fi
 systemctl show --no-pager lyceumtv-kiosk.service -p ActiveState -p SubState -p NRestarts -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
-sudo journalctl -u lyceumtv-kiosk.service -n 12 --no-pager
+sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 12 --no-pager
 systemctl is-active --quiet lyceumtv-kiosk.service
 '@
 $temporaryPath = Join-Path $env:TEMP ("lyceumtv-kiosk-fix-" + [guid]::NewGuid().ToString("N") + ".sh")
@@ -64,5 +87,7 @@ finally {
 }
 Write-Host "Kiosk settings applied. Check the TV picture; this does not update the backend version."
 """
-(root / "FIX_KIOSK_ORANGEPI.ps1").write_text(header + profile + "\n" + footer)
+(root / "FIX_KIOSK_ORANGEPI.ps1").write_text(
+    header + profile + "\n" + footer + check + "\n" + verification
+)
 print("Generated standalone repair from canonical kiosk_profile.py")

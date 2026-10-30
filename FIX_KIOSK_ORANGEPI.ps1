@@ -64,10 +64,76 @@ if account.pw_uid == 0 or account.pw_dir != "/var/lib/lyceumtv-kiosk":
 prepare_profile(account.pw_dir, account.pw_uid, account.pw_gid)
 PYPROFILE
 sudo systemctl daemon-reload
+started=$(date +%s)
 sudo systemctl restart lyceumtv-kiosk.service
-sleep 8
+if /usr/bin/python3 -I - <<'PYCHECK'
+"""Reject a kiosk restart loop even while systemd briefly reports active."""
+
+import subprocess
+import sys
+import time
+
+
+def read_snapshot():
+    result = subprocess.check_output(
+        [
+            "systemctl",
+            "show",
+            "--no-pager",
+            "lyceumtv-kiosk.service",
+            "-p",
+            "ActiveState",
+            "-p",
+            "SubState",
+            "-p",
+            "MainPID",
+            "-p",
+            "NRestarts",
+        ],
+        text=True,
+        timeout=5,
+    )
+    return dict(line.split("=", 1) for line in result.splitlines() if "=" in line)
+
+
+def require_running(snapshot):
+    if (
+        snapshot.get("ActiveState") != "active"
+        or snapshot.get("SubState") != "running"
+        or not str(snapshot.get("MainPID", "")).isdigit()
+        or int(snapshot.get("MainPID", "0")) <= 0
+    ):
+        raise RuntimeError("Kiosk is not running: " + str(snapshot))
+
+
+def wait_for_stable(seconds=20, read=read_snapshot, sleep=time.sleep):
+    baseline = read()
+    require_running(baseline)
+    for _ in range(seconds):
+        sleep(1)
+        current = read()
+        require_running(current)
+        if any(
+            current.get(key) != baseline.get(key) for key in ("MainPID", "NRestarts")
+        ):
+            raise RuntimeError("Kiosk restarted during verification: " + str(current))
+
+try:
+    wait_for_stable()
+except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+    print(str(error), file=sys.stderr)
+    raise SystemExit(1)
+PYCHECK
+then
+  echo "Kiosk process remained stable for 20 seconds; check the TV picture."
+else
+  sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 25 --no-pager
+  kiosk_uid=$(id -u lyceumtv-kiosk)
+  sudo journalctl -b "_UID=$kiosk_uid" --since "@$started" -n 60 --no-pager
+  exit 1
+fi
 systemctl show --no-pager lyceumtv-kiosk.service -p ActiveState -p SubState -p NRestarts -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
-sudo journalctl -u lyceumtv-kiosk.service -n 12 --no-pager
+sudo journalctl -u lyceumtv-kiosk.service --since "@$started" -n 12 --no-pager
 systemctl is-active --quiet lyceumtv-kiosk.service
 '@
 $temporaryPath = Join-Path $env:TEMP ("lyceumtv-kiosk-fix-" + [guid]::NewGuid().ToString("N") + ".sh")
