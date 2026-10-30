@@ -86,5 +86,13 @@
     "new": "No explicit fullscreen request; window mapped with actual size 1280x720 and return code 0",
     "not_claimed": "Local older compositor did not reproduce the owner's wlroots 0.19 assertion; exact ARM GTK4.22/Cage0.2.1 full WebKit rendering is pending",
     "upstream_evidence": "Cage v0.2.1 handle_xdg_toplevel_request_fullscreen lacks initialized guard; current upstream has this guard"
+  },
+  "post_release_single_output": {
+    "owner_observation": "Kiosk stable with NRestarts=0 after 3.7.3, TV shows blue partial/background-only picture",
+    "configuration": "Previous logs expose firmware Unknown-1 and real HDMI-A-1; Cage defaults to extend, changed to -m last for the observed order",
+    "native_geometry_probe": "Two headless outputs: extend mapped a 2560x720 window; last mapped 1280x720",
+    "native_limit": "Cloud Cage 0.2.0 segfaulted during cleanup after the last-mode probe quit. Correct mapped dimensions were observed; this is not a full pass for the target Cage0.2.1/physical display",
+    "targeted_tests_passed": 6,
+    "hardware_result": "awaiting owner verification; blue picture may need further rendering diagnosis if single output is insufficient"
   }
 }

@@ -34,4 +34,6 @@ export GDK_BACKEND=wayland
 export GSK_RENDERER=cairo
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
 # Separate homes, private runtime and the default WebKit sandbox remain enabled.
-exec /usr/bin/dbus-run-session -- /usr/bin/cage -- /usr/local/lib/lyceumtv/tv-session.sh
+# Armbian exposes a firmware Unknown-1 output alongside physical HDMI. Extend
+# would span the TV window over both; the last detected HDMI owns the kiosk.
+exec /usr/bin/dbus-run-session -- /usr/bin/cage -m last -- /usr/local/lib/lyceumtv/tv-session.sh

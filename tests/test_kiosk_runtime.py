@@ -55,7 +55,7 @@ class KioskLauncherTests(unittest.TestCase):
         for name, code in {
             "curl": "#!/bin/sh\nexit 0\n",
             "dbus-run-session": '#!/bin/sh\nshift\nexec "$@"\n',
-            "cage": '#!/bin/sh\nprintf "%s\\n" "$XDG_RUNTIME_DIR" > "$KIOSK_TEST_RECORD"\n',
+            "cage": '#!/bin/sh\nprintf "%s\\n" "$XDG_RUNTIME_DIR" > "$KIOSK_TEST_RECORD"\nprintf "%s\\n" "$@" > "${KIOSK_TEST_RECORD}.args"\n',
         }.items():
             path = self.bin / name
             path.write_text(code)
@@ -92,6 +92,8 @@ class KioskLauncherTests(unittest.TestCase):
         result = self.launch()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.marker.read_text().strip(), str(self.runtime))
+        args = Path(str(self.marker) + ".args").read_text().splitlines()
+        self.assertEqual(args[args.index("-m") + 1], "last")
         self.assertFalse(list(self.runtime.glob(".lyceumtv-runtime-*")))
 
     def test_missing_runtime_fails_before_compositor_starts(self):

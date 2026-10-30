@@ -49,6 +49,7 @@ if account.pw_uid == 0 or account.pw_dir != "/var/lib/lyceumtv-kiosk":
     raise SystemExit("Refusing unexpected kiosk account/home directory")
 prepare_profile(account.pw_dir, account.pw_uid, account.pw_gid)
 PYPROFILE
+sudo sed -i.before-single-output 's|/usr/bin/cage --|/usr/bin/cage -m last --|' /usr/local/lib/lyceumtv/launch-kiosk.sh
 if loginctl show-user --no-pager lyceumtv-kiosk >/dev/null 2>&1; then
   sudo loginctl terminate-user lyceumtv-kiosk
 fi
