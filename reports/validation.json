@@ -100,17 +100,26 @@
     "method": "Cursor fix v3: private transparent default theme, explicit environment block before every Cage exec, and WLR_NO_HARDWARE_CURSORS=1",
     "native_test": "Actual wlroots 0.18 reproduces v1 opaque built-in fallback despite XCURSOR_THEME. v2 resolves NULL/default/left_ptr/named themes to transparent 1x1 pixels for 5 cursor names at 4 sizes; libXcursor decode also passes",
     "targeted_tests_passed": 10,
-    "hardware_result": "Awaiting owner verification of v3 after power-on; no confirmed root cause for boot recurrence is claimed",
+    "hardware_result": "First-start cursor/display issue remains unresolved by owner report; awaiting first-boot diagnostics before any further display change",
     "project_verifier": "Passed 105 Python tests, 16 JavaScript syntax checks and 8 JavaScript runtime checks",
     "v1_owner_result": "Owner reports cursor still visible after the first helper",
     "v2_owner_result": "Owner initially confirmed cursor hidden, then reported it remains after powering on Orange Pi; boot journal has not been supplied",
     "v3_checks": "Actual launcher process passes all three cursor variables even with an empty or conflicting inherited cursor environment. Upgrade is idempotent, preserves local launcher content and keeps the original backup. Existing native wlroots NULL/default theme checks still pass.",
-    "wlroots_019_option_check": "Extracted Debian wlroots 0.19.3 shared library includes WLR_NO_HARDWARE_CURSORS and the forcing-software-cursors implementation message; physical H3 driver behavior is not claimed verified"
+    "wlroots_019_option_check": "Extracted Debian wlroots 0.19.3 shared library includes WLR_NO_HARDWARE_CURSORS and the forcing-software-cursors implementation message; physical H3 driver behavior is not claimed verified",
+    "latest_owner_report": "Cursor remains and TV needs an extra off/on cycle after board startup; actual installed version and Cage runtime environment have not yet been verified"
   },
   "local_sync_mode": {
     "behavior": "Empty manifest_url and sheets_url select local mode without network/staging/live data changes. Configured failures still become health alerts.",
     "unit_tests_passed": 4,
     "browser_check": "Passed actual admin manual sync and Operations Center API: ЛОКАЛЬНО, no false sync alert, no browser page errors",
     "owner_configuration": "Owner confirms all content is edited only in the administration panel"
+  },
+  "post_release_display_diagnostic": {
+    "kind": "Read-only CHECK_ORANGEPI.ps1; no service restart, modeset, configuration edit or debugfs mounting",
+    "collects": "Health version, actual per-process whitelisted display environment/capabilities, kernel DRM connector/plane state, wlr-randr --json queried as kiosk UID, first-boot display journals",
+    "does_not_collect": "Application configuration, full process argv or complete process environments",
+    "targeted_tests_passed": 7,
+    "payload_validation": "Shell and embedded Python syntax, canonical source equality and UTF-8 BOM checked",
+    "hardware_run": "Awaiting owner report; physical board is not reachable from this cloud workspace"
   }
 }
