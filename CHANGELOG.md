@@ -1,3 +1,12 @@
+# 3.7.3 — сумісність GTK з Cage 0.2.1 / wlroots 0.19
+
+- За свіжим журналом 3.7.2 capset/prctl спрацювали на ARM32: до GTK усі capability-набори нульові, NoNewPrivs=1. Нова причина перезапуску — wlr_xdg_surface_schedule_configure: Assertion surface->initialized.
+- Прибрано ранній Gtk.Window.fullscreen до initial commit. Вихідний код Cage v0.2.1 не має guard у request_fullscreen; актуальний upstream його має. Cage сам позиціонує/розгортає вікно після initial commit.
+- Окремий GTK/Cage headless probe використовує ту саму production-функцію показу вікна й перевіряє mapped/розмір та відсутність раннього fullscreen у Wayland trace. Це не повний ARM/WebKit/HDMI тест.
+- GTK_A11Y=none за замовчуванням для неінтерактивного TV без accessibility bus.
+- Додано FIX_KIOSK_ORANGEPI_373.ps1 в artifact-гілці та збережено перевірку стабільності 20 секунд, capset/prctl і захист профілю.
+- Поява зображення на фізичній платі після 3.7.3 очікує підтвердження власником.
+
 # 3.7.2 — явне скидання прав у WebKit host
 
 - NoNewPrivileges блокує нові права, але саме по собі не скидає вже успадкований permitted-набір. Додано capset/prctl у процес браузера до GTK/WebKit з перевіркою /proc/self/status; при невідповідності запуск зупиняється.

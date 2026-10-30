@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$BoardHost = "192.168.0.160",
     [string]$BoardUser = "admin"
 )
@@ -9,7 +9,7 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Repairing kiosk 3.7.2 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
+Write-Host "Repairing kiosk 3.7.3 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 sudo -v
@@ -68,8 +68,8 @@ if loginctl show-user --no-pager lyceumtv-kiosk >/dev/null 2>&1; then
   sudo loginctl terminate-user lyceumtv-kiosk
 fi
 sudo test -d /usr/local/lib/lyceumtv
-if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.2 ]; then
-  sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.2
+if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.3 ]; then
+  sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.3
 fi
 new_host=$(sudo mktemp /usr/local/lib/lyceumtv/.kiosk-browser-XXXXXX)
 sudo tee "$new_host" >/dev/null <<'PYHOST'
@@ -155,6 +155,8 @@ def allowed_navigation(uri):
 
 
 def load_bindings():
+    # Dedicated TV does not provide an accessibility session bus.
+    os.environ.setdefault("GTK_A11Y", "none")
     import gi
 
     gi.require_version("Gtk", "4.0")
@@ -171,6 +173,14 @@ def make_settings(WebKit):
         enable_page_cache=False,
         hardware_acceleration_policy=WebKit.HardwareAccelerationPolicy.NEVER,
     )
+
+
+def present_kiosk_window(window):
+    # Cage fills its output itself. Calling fullscreen before the initial commit
+    # hits an uninitialized xdg_surface in Cage 0.2.1 / wlroots 0.19.
+    window.set_decorated(False)
+    window.set_default_size(1280, 720)
+    window.present()
 
 
 def main(argv=None):
@@ -266,11 +276,8 @@ def main(argv=None):
             self.window = Gtk.ApplicationWindow(
                 application=self, title="LyceumTV — Orange Pi"
             )
-            self.window.set_decorated(False)
-            self.window.set_default_size(1280, 720)
             self.window.set_child(self.view)
-            self.window.fullscreen()
-            self.window.present()
+            present_kiosk_window(self.window)
             self.view.load_uri(TV_URL)
 
         def decide_policy(self, _view, decision, kind):

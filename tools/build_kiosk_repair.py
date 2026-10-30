@@ -27,7 +27,7 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Repairing kiosk 3.7.2 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
+Write-Host "Repairing kiosk 3.7.3 (runtime capability drop) on ${BoardUser}@${BoardHost}..."
 $remoteCode = @'
 set -eu
 sudo -v
@@ -53,8 +53,8 @@ if loginctl show-user --no-pager lyceumtv-kiosk >/dev/null 2>&1; then
   sudo loginctl terminate-user lyceumtv-kiosk
 fi
 sudo test -d /usr/local/lib/lyceumtv
-if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.2 ]; then
-  sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.2
+if [ ! -e /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.3 ]; then
+  sudo cp -p /usr/local/lib/lyceumtv/kiosk_browser.py /usr/local/lib/lyceumtv/kiosk_browser.py.before-3.7.3
 fi
 new_host=$(sudo mktemp /usr/local/lib/lyceumtv/.kiosk-browser-XXXXXX)
 sudo tee "$new_host" >/dev/null <<'PYHOST'
@@ -116,6 +116,7 @@ Write-Host "Kiosk settings applied. Check the TV picture; this does not update t
     + install_browser
     + check
     + "\n"
-    + verification
+    + verification,
+    encoding="utf-8-sig",
 )
 print("Generated standalone repair from canonical kiosk_profile.py")

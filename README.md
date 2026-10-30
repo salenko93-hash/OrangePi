@@ -1,23 +1,23 @@
-# LyceumTV 3.7.2 — Orange Pi PC
+# LyceumTV 3.7.3 — Orange Pi PC
 
 Окрема версія для **Orange Pi PC / Allwinner H3 / 1 ГБ RAM / armhf**. Основа — захищена LyceumTV 3.6.1. Сервер працює на самій Orange Pi; Raspberry Pi для цієї збірки не потрібна.
 
 Розклад, оголошення, тривоги, хвилина мовчання, фото по 3 секунди, відео й музика збережені. Графічний екран: **Cage + WebKitGTK 6.0 / GTK4**, без робочого столу та Snap/Chromium. Медіа відтворюються через GStreamer і окремий PulseAudio користувача kiosk.
 
-**[Завантажити готовий ZIP](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.2/LyceumTV-3.7.2-ORANGEPI-PC.zip)** — на сторінці файла натисніть стрілку **Download raw file**. Для приватного репозиторію потрібен вхід у GitHub. Розпакуйте весь архів.
+**[Завантажити готовий ZIP](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.3/LyceumTV-3.7.3-ORANGEPI-PC.zip)** — на сторінці файла натисніть стрілку **Download raw file**. Для приватного репозиторію потрібен вхід у GitHub. Розпакуйте весь архів.
 
 ## Виправлення чорного екрана у встановленій 3.7.x
 
-За журналом власника у 3.7.1 WebKit продовжував падати з `bwrap: Unexpected capabilities`, хоча service показував NoNewPrivileges=yes. У 3.7.2 сам процес браузера виконує capset: скидає permitted/effective/inheritable/ambient права, задає no_new_privs і перевіряє фактичний стан до завантаження GTK/WebKit. Sandbox збережено; файл bwrap і налаштування захисту ОС не змінюються.
+У 3.7.2 скидання capabilities спрацювало на фізичній платі; після цього журнал показав окреме падіння Cage/wlroots на ранньому fullscreen-запиті. У 3.7.3 GTK-вікно показується без такого запиту: Cage сам розгортає його на весь вихід. Захист capset/prctl з 3.7.2 збережено, відсутній a11y-bus для окремого TV не запитується.
 
-Завантажте [FIX_KIOSK_ORANGEPI_372.ps1](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.2/FIX_KIOSK_ORANGEPI_372.ps1) через **Download raw file**. У PowerShell у папці цього файла:
+Завантажте [FIX_KIOSK_ORANGEPI_373.ps1](https://github.com/salenko93-hash/OrangePi/blob/download-3.7.3/FIX_KIOSK_ORANGEPI_373.ps1) через **Download raw file**. У PowerShell у папці цього файла:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\FIX_KIOSK_ORANGEPI_372.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
+.\FIX_KIOSK_ORANGEPI_373.ps1 -BoardHost "192.168.0.160" -BoardUser "admin"
 ```
 
-Скрипт атомарно оновлює root-owned браузерний host, зберігає попередній файл як kiosk_browser.py.before-3.7.2, ремонтує права профілю, перевіряє privilege API на платі та спостерігає за PID/перезапусками 20 секунд. При збої повертає помилку й показує свіжі журнали. Backend, ключі, розклад і медіа не змінюються. Фізична поява зображення після цього виправлення ще потребує перевірки власником.
+Скрипт атомарно оновлює root-owned браузерний host, зберігає попередній файл як kiosk_browser.py.before-3.7.3, ремонтує профіль, завершує старі сеанси окремого kiosk-користувача й перевіряє 20 секунд без зміни PID/NRestarts. При збої повертає помилку та показує свіжі журнали. Backend, ключі, розклад і медіа не змінюються. Зображення/звук після нового виправлення перевіряються на фізичній платі.
 
 ## 1. Під’єднайте Orange Pi до мережі
 

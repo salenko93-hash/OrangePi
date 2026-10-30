@@ -125,7 +125,7 @@ def run(nginx=None):
                         with urlopen(
                             base + "/api/health", context=context, timeout=2
                         ) as response:
-                            assert json.load(response)["version"] == "3.7.2"
+                            assert json.load(response)["version"] == "3.7.3"
                             break
                     except OSError:
                         time.sleep(0.1)

@@ -20,6 +20,26 @@ spec.loader.exec_module(browser)
 
 
 class BrowserPrivilegeTests(unittest.TestCase):
+    def test_uninitialized_window_does_not_receive_a_fullscreen_request(self):
+        class Window:
+            def set_decorated(self, decorated):
+                self.decorated = decorated
+
+            def set_default_size(self, width, height):
+                self.size = (width, height)
+
+            def fullscreen(self):
+                raise AssertionError("Cage must not configure an uninitialized surface")
+
+            def present(self):
+                self.presented = True
+
+        window = Window()
+        browser.present_kiosk_window(window)
+        self.assertFalse(window.decorated)
+        self.assertEqual(window.size, (1280, 720))
+        self.assertTrue(window.presented)
+
     @unittest.skipUnless(
         sys.platform == "linux" and os.geteuid() != 0, "unprivileged Linux child"
     )
@@ -66,6 +86,10 @@ class BrowserPrivilegeTests(unittest.TestCase):
             bindings.assert_not_called()
 
     def test_standalone_repair_contains_exact_canonical_browser_host(self):
+        # PowerShell 5.1 needs BOM for the embedded non-ASCII GTK window title.
+        self.assertTrue(
+            (ROOT / "FIX_KIOSK_ORANGEPI.ps1").read_bytes().startswith(b"\xef\xbb\xbf")
+        )
         script = (ROOT / "FIX_KIOSK_ORANGEPI.ps1").read_text()
         embedded = script.split("<<'PYHOST'\n", 1)[1].split("\nPYHOST", 1)[0].rstrip()
         self.assertEqual(

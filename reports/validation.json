@@ -1,11 +1,11 @@
 {
-  "version": "3.7.2",
+  "version": "3.7.3",
   "date": "2026-10-30",
   "target": "Orange Pi PC / Allwinner H3 / 1 GB / armhf",
   "observed_user_os": "Armbian Community 26.11.0-trunk.108 / Ubuntu Resolute / kernel 6.18.57-current-sunxi",
   "target_host": "192.168.0.160",
   "ssh_user": "admin",
-  "unit_tests_passed": 99,
+  "unit_tests_passed": 100,
   "javascript_runtime_checks_passed": 8,
   "javascript_files_checked": 16,
   "browser_security_checks_passed": 9,
@@ -36,11 +36,13 @@
     "Standalone repair embeds the same canonical safe profile implementation; its shell/heredoc syntax checked",
     "Actual Linux child capability clearing plus root/failure-before-GI regressions",
     "Canonical embedded browser host checked; no sandbox disabling or OS binary changes",
-    "Restart-loop false-positive checks and 20-second process-stability probe"
+    "Restart-loop false-positive checks and 20-second process-stability probe",
+    "Regression rejects premature fullscreen; real GTK/Cage protocol probe maps the actual production window helper",
+    "Exact one-line sed field patch checked against 3.7.2 host: valid Python, preserved cap guard and byte-exact backup"
   ],
   "not_run": [
     "Full privileged apt/systemd/PAM/Armbian installation on the physical Orange Pi",
-    "Physical rendering/audio after applying 3.7.2; ARM32 runtime capset/prctl and full WebKit child processes in the final Cage session",
+    "Physical rendering/audio after applying 3.7.3 on GTK4.22/Cage0.2.1/wlroots0.19; actual capset/prctl on ARM32 was verified by the owner",
     "Windows PowerShell execution and Windows certificate trust UI",
     "Physical HDMI/audio/video performance, actual RAM use and CPU temperature",
     "The users SSH/firewall/router security, power loss or SD-card faults",
@@ -68,6 +70,21 @@
     "failure_paths": "Root and privilege setup failure are rejected before GI loads",
     "repair_payload": "Canonical host bytes embedded, root-owned host replaced atomically, previous file preserved, dedicated kiosk sessions terminated",
     "stability": "20 seconds of stable MainPID/NRestarts required; active restart loop rejected in regression tests",
-    "limitations": "Actual ARM32 kernel execution and physical rendering/audio after this new fix need user verification"
+    "limitations": "ARM32 capability clearing was confirmed by the owner in 3.7.2; full display/audio after 3.7.3 still require physical verification"
+  },
+  "physical_372_observations": {
+    "source": "Owner-provided Windows PowerShell 5.1 repair log, 2026-10-30 11:19",
+    "privilege_fix": "Confirmed on ARM32 in preflight and actual browser: all capability sets zero after capset/prctl, NoNewPrivs=1",
+    "initial_browser_caps": "0000000800000000 in inheritable/permitted/effective/ambient (CAP_WAKE_ALARM)",
+    "remaining_failure": "Cage/wlroots aborts in wlr_xdg_surface_schedule_configure: Assertion surface->initialized",
+    "display": "Mali400/Lima and HDMI-A-1 1280x720@60 initialized",
+    "373_result": "Awaiting owner verification; removing early fullscreen request is the current fix"
+  },
+  "gtk_window_protocol_probe": {
+    "tested_runtime": "Actual GTK4 4.18.6, Cage 0.2.0, wlroots 0.18.2 on x86_64 headless/pixman; uses production present_kiosk_window",
+    "legacy": "Trace contains xdg_toplevel.set_fullscreen before initial wl_surface.commit",
+    "new": "No explicit fullscreen request; window mapped with actual size 1280x720 and return code 0",
+    "not_claimed": "Local older compositor did not reproduce the owner's wlroots 0.19 assertion; exact ARM GTK4.22/Cage0.2.1 full WebKit rendering is pending",
+    "upstream_evidence": "Cage v0.2.1 handle_xdg_toplevel_request_fullscreen lacks initialized guard; current upstream has this guard"
   }
 }

@@ -154,3 +154,7 @@ Import-Certificate -FilePath .\lyceumtv-ca.crt -CertStoreLocation Cert:\CurrentU
 Якщо зображення все ще немає, запустіть CHECK_ORANGEPI.ps1 із нової версії. Він показує NoNewPrivs/CapEff фактичного процесу та лічильник перезапусків, а також журнал. Результат active під час циклу перезапусків не означає, що WebKit встиг запуститися.
 
 Bounding set залишено типовим: порожній набір може спричинити EPERM при execve capability-marked системного бінарника ще до застосування обмеження no_new_privs. NoNewPrivileges не дозволяє набуття нових прав через file capabilities; ambient-набір порожній. У 3.7.2 browser host додатково виконує capset/prctl самостійно до GTK/WebKit. Очікуваний фактичний стан саме браузера — NoNewPrivs: 1 і нульові CapEff/CapPrm.
+
+## Cage: Assertion surface->initialized у 3.7.2
+
+Новий журнал підтвердив, що actual browser capabilities очищені. Потім Cage 0.2.1/wlroots 0.19 падав при обробці раннього fullscreen від GTK. У 3.7.3 host лише задає вікну розмір/відсутність декорацій і викликає present; Cage сам розгортає вікно після початкового commit. Використайте FIX_KIOSK_ORANGEPI_373.ps1 або повний установник 3.7.3. Capset/prctl і sandbox збережено; переходу на інший compositor/браузер чи змін ядра немає.
