@@ -9,7 +9,7 @@ if ($BoardUser -notmatch '^[a-z_][a-z0-9_-]{0,31}$') { throw "Invalid Linux user
 foreach ($cmd in @("ssh", "scp")) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "Windows OpenSSH Client is required." }
 }
-Write-Host "Collecting first-boot display diagnostics; leave the TV unchanged."
+Write-Host "Collecting display diagnostic v2 (actual cursor decoding); leave the TV unchanged."
 $remoteCode = @'
 set -eu
 trap 'rm -f -- "$0"' EXIT
@@ -24,6 +24,7 @@ import pwd
 import re
 import stat
 import subprocess
+import sys
 from urllib.request import urlopen
 
 ENV_KEYS = (
@@ -37,6 +38,44 @@ ENV_KEYS = (
     "WEBKIT_DISABLE_DMABUF_RENDERER",
     "LIBSEAT_BACKEND",
 )
+
+# Load cursor assets as the actual kiosk UID, without opening a Wayland display
+# or creating a GUI. This distinguishes a transparent theme from a fallback arrow.
+NATIVE_CURSOR_PROBE = """import ctypes as c, ctypes.util, json, os, sys
+library = sys.argv[1] if len(sys.argv) > 1 else (ctypes.util.find_library("wlroots-0.19") or ctypes.util.find_library("wlroots-0.18"))
+if not library:
+    print(json.dumps({"available": False, "reason": "wlroots cursor library not found"}))
+    raise SystemExit(0)
+class Image(c.Structure):
+    _fields_ = [(n, c.c_uint32) for n in ("width", "height", "hotspot_x", "hotspot_y", "delay")] + [("buffer", c.POINTER(c.c_uint8))]
+class Cursor(c.Structure):
+    _fields_ = [("image_count", c.c_uint), ("images", c.POINTER(c.POINTER(Image))), ("name", c.c_char_p), ("total_delay", c.c_uint32)]
+lib = c.CDLL(library)
+lib.wlr_xcursor_theme_load.argtypes = [c.c_char_p, c.c_int]
+lib.wlr_xcursor_theme_load.restype = c.c_void_p
+lib.wlr_xcursor_theme_get_cursor.argtypes = [c.c_void_p, c.c_char_p]
+lib.wlr_xcursor_theme_get_cursor.restype = c.POINTER(Cursor)
+lib.wlr_xcursor_theme_destroy.argtypes = [c.c_void_p]
+result = {"available": True, "uid": os.geteuid(), "library": library, "cursors": []}
+for theme_name in (None, b"default", b"lyceumtv-invisible"):
+    theme = lib.wlr_xcursor_theme_load(theme_name, 24)
+    if not theme:
+        result["cursors"].append({"theme": str(theme_name), "loaded": False})
+        continue
+    try:
+        for name in (b"left_ptr", b"default"):
+            pointer = lib.wlr_xcursor_theme_get_cursor(theme, name)
+            item = {"theme": str(theme_name), "name": name.decode(), "loaded": bool(pointer)}
+            if pointer and pointer.contents.image_count:
+                image = pointer.contents.images[0].contents
+                if not (0 < image.width <= 4096 and 0 < image.height <= 4096):
+                    raise RuntimeError("Unexpected cursor image dimensions")
+                item.update(width=image.width, height=image.height, visible_alpha=any(image.buffer[i] for i in range(3, image.width * image.height * 4, 4)))
+            result["cursors"].append(item)
+    finally:
+        lib.wlr_xcursor_theme_destroy(theme)
+print(json.dumps(result, indent=2))
+"""
 
 
 def read(path):
@@ -93,8 +132,8 @@ def processes(uid, proc=Path("/proc")):
     return records
 
 
-def command(argv, **kwargs):
-    print("COMMAND:", " ".join(argv), flush=True)
+def command(argv, *, label=None, **kwargs):
+    print("COMMAND:", label or " ".join(argv), flush=True)
     try:
         result = subprocess.run(
             argv, capture_output=True, text=True, timeout=10, **kwargs
@@ -110,7 +149,7 @@ def command(argv, **kwargs):
 def main():
     if os.geteuid() != 0:
         raise SystemExit("Run this diagnostic using sudo.")
-    print("LyceumTV read-only display diagnostic v1", flush=True)
+    print("LyceumTV read-only display diagnostic v2", flush=True)
     command(["date", "--iso-8601=seconds"])
     command(["uptime"])
     command(["uname", "-a"])
@@ -153,6 +192,27 @@ def main():
         print("launcher single output:", b"/usr/bin/cage -m last --" in source)
     except OSError as error:
         print("launcher unavailable:", error)
+    for name, markers in (
+        (
+            "kiosk_browser.py",
+            {
+                "window_cursor_hidden": b'window.set_cursor_from_name("none")',
+                "gtk_cursor_theme": b"gtk-cursor-theme-name",
+            },
+        ),
+        ("display_mode.py", {"native_mode_default": b"if not args.prefer_720p:"}),
+    ):
+        try:
+            raw = (launcher.parent / name).read_bytes()
+            print(
+                name,
+                "SHA256:",
+                hashlib.sha256(raw).hexdigest(),
+                "features:",
+                {key: value in raw for key, value in markers.items()},
+            )
+        except OSError as error:
+            print(name, "unavailable:", error)
 
     print("=== DRM CONNECTORS ===")
     for connector in sorted(Path("/sys/class/drm").glob("card*-*")):
@@ -179,6 +239,21 @@ def main():
     snapshot = processes(account.pw_uid)
     print("=== ACTUAL CAGE / BROWSER PROCESSES (selected fields only) ===")
     print(json.dumps(snapshot, ensure_ascii=False, indent=2), flush=True)
+    cage_environment = next(
+        (item["environment"] for item in snapshot if item["comm"] == "cage"), {}
+    )
+    if cage_environment:
+        env = {"PATH": "/usr/bin:/bin", "HOME": account.pw_dir, **cage_environment}
+        print("=== ACTUAL KIOSK UID CURSOR ASSET DECODE ===")
+        command(
+            [sys.executable, "-I", "-c", NATIVE_CURSOR_PROBE],
+            label="wlroots cursor decoding as kiosk UID; no GUI or display change",
+            user=account.pw_uid,
+            group=account.pw_gid,
+            extra_groups=os.getgrouplist(account.pw_name, account.pw_gid),
+            env=env,
+            cwd="/",
+        )
     display = next(
         (
             item["environment"]
@@ -226,6 +301,17 @@ def main():
         ["journalctl", "-b", "-u", "lyceumtv-kiosk.service", "--no-pager", "-n", "100"]
     )
     command(["journalctl", "-b", f"_UID={account.pw_uid}", "--no-pager", "-n", "100"])
+    command(
+        [
+            "journalctl",
+            "-b",
+            f"_UID={account.pw_uid}",
+            "--no-pager",
+            "--grep=GTK cursor:|no startup resolution change|HDMI low-memory mode:|disconnected|connected",
+            "-n",
+            "60",
+        ]
+    )
     command(
         [
             "journalctl",

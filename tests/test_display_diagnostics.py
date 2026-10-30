@@ -2,8 +2,11 @@
 
 import importlib.util
 import os
+import json
 from pathlib import Path
 import tempfile
+import subprocess
+import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +18,46 @@ spec.loader.exec_module(diag)
 
 
 class DisplayDiagnosticsTests(unittest.TestCase):
+    @unittest.skipUnless(
+        os.environ.get("LYCEUMTV_TEST_WLROOTS_LIBRARY"),
+        "optional native wlroots fixture",
+    )
+    def test_native_probe_reports_transparent_pixels_without_a_display(self):
+        spec = importlib.util.spec_from_file_location(
+            "diagnostic_cursor_theme", ROOT / "scripts/hide_cursor.py"
+        )
+        theme = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(theme)
+        with tempfile.TemporaryDirectory() as directory:
+            theme.install(Path(directory))
+            env = os.environ.copy()
+            env["XCURSOR_PATH"] = str(Path(directory) / theme.SEARCH_PATH)
+            env.pop("WAYLAND_DISPLAY", None)
+            env.pop("DISPLAY", None)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-c",
+                    diag.NATIVE_CURSOR_PROBE,
+                    env["LYCEUMTV_TEST_WLROOTS_LIBRARY"],
+                ],
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            report = json.loads(result.stdout)
+            self.assertEqual(report["uid"], os.geteuid())
+            self.assertEqual(len(report["cursors"]), 6)
+            self.assertTrue(
+                all(
+                    item["loaded"] and item["visible_alpha"] is False
+                    for item in report["cursors"]
+                )
+            )
+
     def test_environment_filters_credentials_and_only_keeps_display_settings(self):
         result = diag.filtered_environment(
             b"XCURSOR_THEME=default\0ADMIN_KEY=secret-marker\0WAYLAND_DISPLAY=wayland-0\0TELEGRAM_TOKEN=private-marker\0"

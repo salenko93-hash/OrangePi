@@ -118,9 +118,12 @@
     "kind": "Read-only CHECK_ORANGEPI.ps1; no service restart, modeset, configuration edit or debugfs mounting",
     "collects": "Health version, actual per-process whitelisted display environment/capabilities, kernel DRM connector/plane state, wlr-randr --json queried as kiosk UID, first-boot display journals",
     "does_not_collect": "Application configuration, full process argv or complete process environments",
-    "targeted_tests_passed": 7,
+    "targeted_tests_passed": 3,
     "payload_validation": "Shell and embedded Python syntax, canonical source equality and UTF-8 BOM checked",
-    "hardware_run": "Awaiting owner report; physical board is not reachable from this cloud workspace"
+    "hardware_run": "V1 owner log received and analyzed; awaiting v2 installed-file and actual-UID cursor decode results",
+    "revision": 2,
+    "additional_checks": "Installed GTK host/native-mode helper fingerprints and feature markers; actual wlroots cursor alpha decoding as the kiosk UID using observed Cage environment, without a Wayland connection; targeted cursor/mode boot log lines",
+    "native_test": "Probe executed against wlroots0.19.3 without DISPLAY/WAYLAND_DISPLAY, all six cursor results transparent"
   },
   "post_release_native_hdmi_gtk": {
     "source": "Owner LyceumTV-HDMI-20261030-145328.txt; owner explicitly denies manually cycling the TV before capture",
@@ -133,7 +136,7 @@
     "full_project_tests_passed": 113,
     "javascript_runtime_checks_passed": 8,
     "repair": "Current FIX_KIOSK_ORANGEPI.ps1 embeds canonical cursor installer, browser host and native display helper; backups, atomic root-owned file replacement and 20-second stability check retained",
-    "hardware_result": "Awaiting owner verification of this diagnostic-driven patch; no physical success claimed",
+    "hardware_result": "Owner reports visible mouse arrow remains after repair and TV power cycling; fresh photo shows arrow over the holiday title. Updated installed host/display helper fingerprints have not yet been verified.",
     "archive": "Published ZIP 3.7.4 remains immutable and does not include this later patch"
   }
 }

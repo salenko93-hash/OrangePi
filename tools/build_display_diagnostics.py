@@ -7,7 +7,7 @@ builder = (ROOT / "tools/build_kiosk_repair.py").read_text()
 header = builder.split('header = """', 1)[1].split('Write-Host "Repairing', 1)[0]
 source = (ROOT / "scripts/display_diagnostics.py").read_text().rstrip()
 payload = (
-    """Write-Host "Collecting first-boot display diagnostics; leave the TV unchanged."
+    """Write-Host "Collecting display diagnostic v2 (actual cursor decoding); leave the TV unchanged."
 $remoteCode = @'
 set -eu
 trap 'rm -f -- "$0"' EXIT
