@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LyceumTV • Smart Operations</title>
+    <link rel="stylesheet" href="/css/operations.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"
+        ><img src="/img/logo_white.png" /><span
+          ><b>LyceumTV 3.7.0</b><small>SMART OPERATIONS CENTER</small></span
+        ></a
+      >
+      <div class="top-actions">
+        <a class="btn ghost" href="/admin">Control Center</a
+        ><a class="btn ghost" href="/teacher">Teacher View</a
+        ><a class="btn ghost" href="/campus/">Campus</a>
+      </div>
+    </header>
+    <main class="container">
+      <section id="signin" class="card signin">
+        <div class="eyebrow">OPERATIONS CENTER</div>
+        <h1>Керування Smart Campus</h1>
+        <p class="hint">Введіть Dispatcher key або Admin key.</p>
+        <div class="auth">
+          <input
+            id="roleKey"
+            type="password"
+            placeholder="Dispatcher / Admin key"
+          /><button id="connect" class="primary">ПІДКЛЮЧИТИСЯ</button>
+        </div>
+      </section>
+      <section id="app" class="hidden">
+        <div class="card hero">
+          <div>
+            <div class="eyebrow">SMART CAMPUS • REAL-TIME</div>
+            <h1>Operations Center</h1>
+            <p id="updated">—</p>
+          </div>
+          <div class="actions">
+            <button id="refresh" class="primary">ОНОВИТИ</button>
+          </div>
+        </div>
+        <nav class="tabs">
+          <button data-tab="overview" class="active">СТАН</button
+          ><button data-tab="duty">ЧЕРГУВАННЯ</button
+          ><button data-tab="rooms">КАБІНЕТИ</button
+          ><button data-tab="substitutions">ЗАМІНИ</button
+          ><button data-tab="notifications">СПОВІЩЕННЯ</button
+          ><button data-tab="media">MEDIA / SIGNAGE</button
+          ><button data-tab="audio">АУДІО</button
+          ><button data-tab="music">МУЗИКА</button
+          ><button data-tab="screens">ЕКРАНИ / КОРПУСИ</button
+          ><button data-tab="stats">СТАТИСТИКА / AUDIT</button>
+        </nav>
+
+        <section id="tab-overview" class="tab active">
+          <div id="statusGrid" class="status-grid"></div>
+          <div class="grid">
+            <section class="card">
+              <div class="section-title">
+                <h2>HEALTH ALERTS</h2>
+                <span class="pill">Orange Pi</span>
+              </div>
+              <div id="healthList" class="health-list"></div>
+            </section>
+            <section class="card">
+              <div class="section-title">
+                <h2>ЗАРАЗ У ЛІЦЕЇ</h2>
+                <span id="phasePill" class="pill"></span>
+              </div>
+              <div id="nowGrid" class="grid three"></div>
+            </section>
+            <section class="card wide">
+              <div class="section-title">
+                <h2>ОСТАННІ ПОДІЇ</h2>
+                <span class="pill">AUDIT</span>
+              </div>
+              <div id="recentLogs" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-duty" class="tab">
+          <div class="grid">
+            <section class="card wide">
+              <div class="section-title">
+                <h2>ЧЕРГУВАННЯ КЛАСІВ</h2>
+                <span class="pill">1 НАВЧАЛЬНИЙ ТИЖДЕНЬ</span>
+              </div>
+              <div id="dutyStatusGrid" class="status-grid"></div>
+              <div
+                id="dutyNotice"
+                class="row-item"
+                style="margin-top: 12px"
+              ></div>
+            </section>
+
+            <section class="card wide">
+              <div class="section-title">
+                <h2>РОТАЦІЯ</h2>
+                <span class="pill">8 КЛАСІВ</span>
+              </div>
+              <form id="dutySettingsForm">
+                <div class="form-grid three">
+                  <label
+                    ><input name="duty_class_enabled" type="checkbox" />
+                    Показувати черговий клас</label
+                  >
+                  <label
+                    ><input
+                      name="duty_skip_full_holiday_weeks"
+                      type="checkbox"
+                    />
+                    Не рахувати повні канікулярні тижні</label
+                  >
+                  <label
+                    >Напис на TV<input
+                      name="duty_class_label"
+                      value="ЧЕРГОВИЙ КЛАС"
+                  /></label>
+                </div>
+                <div class="form-grid three">
+                  <label
+                    >Початок ротації<input
+                      name="duty_rotation_start_date"
+                      type="date"
+                      value="2026-09-01"
+                  /></label>
+                  <label
+                    >Перший клас<select
+                      name="duty_rotation_start_class"
+                    ></select
+                  ></label>
+                  <label
+                    >Ручний режим<select name="duty_manual_class"></select
+                  ></label>
+                </div>
+                <label
+                  >Порядок чергування
+                  <input
+                    name="duty_rotation_order_text"
+                    value="10-А, 10-Б, 10-В, 10-Г, 11-А, 11-Б, 11-В, 11-Г"
+                  />
+                </label>
+                <div class="actions">
+                  <button class="primary" type="submit">
+                    ЗБЕРЕГТИ ЧЕРГУВАННЯ
+                  </button>
+                  <button class="ghost" id="dutyResetAuto" type="button">
+                    СКИНУТИ НА AUTO
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <section class="card wide">
+              <div class="section-title"><h2>ЯК ЦЕ ПРАЦЮЄ</h2></div>
+              <div class="row-item">
+                <b
+                  >Черговий клас виділяється золотим контуром і бейджем ★
+                  ЧЕРГОВИЙ КЛАС.</b
+                >
+                <span
+                  >Один і той самий клас виділяється і в звичайному синьому
+                  розкладі, і в червоному розкладі укриття. Повний канікулярний
+                  тиждень не зсуває ротацію.</span
+                >
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-rooms" class="tab">
+          <div class="grid">
+            <section class="card">
+              <div class="section-title"><h2>ВІЛЬНІ КАБІНЕТИ</h2></div>
+              <div class="form-grid">
+                <label>Дата<input id="roomDate" type="date" /></label
+                ><label>Урок<select id="roomLesson"></select></label>
+              </div>
+              <div class="actions">
+                <button id="findFree" class="primary">ЗНАЙТИ</button>
+              </div>
+              <div id="freeSummary" class="hint"></div>
+              <div id="freeRooms" class="free-rooms"></div>
+            </section>
+            <section class="card">
+              <div class="section-title"><h2>РОЗКЛАД КАБІНЕТУ</h2></div>
+              <div class="form-grid">
+                <label>Кабінет<select id="roomSelect"></select></label
+                ><label>Дата<input id="roomScheduleDate" type="date" /></label>
+              </div>
+              <div class="actions">
+                <button id="findRoomSchedule" class="primary">ПОКАЗАТИ</button>
+              </div>
+              <div id="roomSchedule" class="lesson-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-substitutions" class="tab">
+          <section class="card">
+            <div class="section-title">
+              <h2>ШВИДКА ЗАМІНА</h2>
+              <span class="pill">TV + PWA + Telegram</span>
+            </div>
+            <form id="subForm">
+              <div class="form-grid four">
+                <label>Дата<input name="date" type="date" required /></label
+                ><label>Клас<select name="class"></select></label
+                ><label
+                  >Урок<input
+                    name="lesson"
+                    type="number"
+                    min="1"
+                    max="12"
+                    value="1" /></label
+                ><label
+                  >Режим<select name="scope">
+                    <option value="both">Звичайний + укриття</option>
+                    <option value="normal">Звичайний</option>
+                    <option value="shelter">Укриття</option>
+                  </select></label
+                >
+              </div>
+              <div class="form-grid four">
+                <label>Предмет<input name="subject" /></label
+                ><label>Кабінет<input name="room" /></label
+                ><label>Викладач<input name="teacher" /></label
+                ><label
+                  >Група<select name="subgroup">
+                    <option value="">—</option>
+                    <option>ГР. 1</option>
+                    <option>ГР. 2</option>
+                  </select></label
+                >
+              </div>
+              <label>Примітка<input name="note" /></label>
+              <div class="actions">
+                <button class="primary" type="submit">
+                  ЗБЕРЕГТИ Й СПОВІСТИТИ
+                </button>
+              </div>
+            </form>
+          </section>
+          <section class="card">
+            <div class="section-title"><h2>АКТИВНІ ЗАМІНИ</h2></div>
+            <div id="subList" class="data-list"></div>
+          </section>
+        </section>
+
+        <section id="tab-notifications" class="tab">
+          <div class="grid">
+            <section class="card">
+              <div class="section-title"><h2>НОВЕ СПОВІЩЕННЯ</h2></div>
+              <form id="notificationForm">
+                <div class="form-grid">
+                  <label>Заголовок<input name="title" value="LyceumTV" /></label
+                  ><label
+                    >Рівень<select name="level">
+                      <option value="info">INFO</option>
+                      <option value="warning">WARNING</option>
+                      <option value="urgent">URGENT</option>
+                    </select></label
+                  >
+                </div>
+                <label
+                  >Текст<textarea name="message" rows="4" required></textarea>
+                </label>
+                <div class="form-grid three">
+                  <label
+                    >Аудиторія<select name="audience">
+                      <option value="all">Всі</option>
+                      <option value="class">Клас</option>
+                      <option value="teacher">Викладач</option>
+                      <option value="screen">Екран</option>
+                    </select></label
+                  ><label
+                    >Кому<input
+                      name="target"
+                      placeholder="10-Б / ПІБ / screen-id" /></label
+                  ><label>До дати<input name="valid_to" type="date" /></label>
+                </div>
+                <div class="actions">
+                  <button class="primary">НАДІСЛАТИ</button>
+                </div>
+              </form>
+            </section>
+            <section class="card">
+              <div class="section-title"><h2>ІСТОРІЯ</h2></div>
+              <div id="notificationList" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-media" class="tab">
+          <section class="card slideshow-manager">
+            <div class="section-title">
+              <h2>СЛАЙД-ШОУ ПІСЛЯ УРОКІВ</h2>
+              <span class="pill">ФОТО · ВІДЕО · МУЗИКА</span>
+            </div>
+            <p class="hint">
+              Спочатку фото по 3 секунди з музикою, потім відео до кінця з
+              власним звуком. Показ повторюється після уроків до 17:00. Під час
+              тривоги та хвилини мовчання показ зупиняється.
+            </p>
+            <div class="actions">
+              <a
+                class="btn ghost"
+                href="/slideshow-preview"
+                target="_blank"
+                rel="noopener"
+                >ПЕРЕГЛЯНУТИ ЗАРАЗ ↗</a
+              >
+            </div>
+            <p class="hint">
+              Перегляд доступний у вихідні та після 17:00. Він відкривається в
+              окремій вкладці.
+            </p>
+            <div class="upload-box">
+              <label for="slideshowFiles"
+                >Фото JPG/PNG/WEBP до 15 МБ; відео MP4/WEBM до 200 МБ (MP4:
+                H.264 + AAC)</label
+              >
+              <input
+                id="slideshowFiles"
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,.mp4,.webm"
+              />
+              <div class="actions">
+                <button id="uploadSlideshow" class="primary" type="button">
+                  ДОДАТИ ФОТО / ВІДЕО
+                </button>
+              </div>
+              <p
+                id="slideshowUploadStatus"
+                class="hint"
+                role="status"
+                aria-live="polite"
+              ></p>
+            </div>
+            <p id="slideshowDuration" class="hint"></p>
+            <div class="upload-box">
+              <label for="slideshowMusicFile"
+                >Музика для фото: MP3/WAV/OGG/M4A до 35 МБ</label
+              >
+              <input
+                id="slideshowMusicFile"
+                type="file"
+                accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,.mp3,.wav,.ogg,.m4a"
+              />
+              <div class="actions">
+                <button id="uploadSlideshowMusic" class="primary" type="button">
+                  ДОДАТИ МУЗИКУ</button
+                ><button id="removeSlideshowMusic" class="ghost" type="button">
+                  БЕЗ МУЗИКИ
+                </button>
+              </div>
+              <p id="slideshowMusicStatus" class="hint"></p>
+              <p class="hint">
+                Тривалість музики = кількість фото × 3 секунди. Короткий трек
+                повторюється; довгий зупиняється перед відео. На початку нового
+                кола музика починається спочатку.
+              </p>
+              <form id="slideshowSoundForm">
+                <div class="form-grid">
+                  <label
+                    >Гучність музики й відео, %<input
+                      id="slideshowVolume"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value="35"
+                      required
+                  /></label>
+                  <label
+                    >Екран зі звуком<input
+                      id="slideshowAudioScreen"
+                      value="main-hall"
+                      pattern="[A-Za-z0-9_-]{1,80}"
+                      required
+                  /></label>
+                </div>
+                <div class="actions">
+                  <button class="primary" type="submit">ЗБЕРЕГТИ ЗВУК</button>
+                </div>
+              </form>
+            </div>
+            <div id="slideshowPhotoList" class="slideshow-photo-list"></div>
+          </section>
+          <div class="grid">
+            <section class="card">
+              <div class="section-title">
+                <h2>MEDIA LIBRARY</h2>
+                <button id="cleanupMedia" class="ghost" type="button">
+                  ОЧИСТИТИ НЕВИКОРИСТАНІ ФАЙЛИ
+                </button>
+              </div>
+              <div class="upload-box">
+                <input
+                  id="mediaFile"
+                  type="file"
+                  accept="image/*,video/mp4,video/webm"
+                />
+                <div class="actions">
+                  <button id="uploadMedia" class="primary">ЗАВАНТАЖИТИ</button>
+                </div>
+              </div>
+              <form id="mediaForm">
+                <label>Назва<input name="title" /></label
+                ><label
+                  >Текст<textarea name="message" rows="3"></textarea>
+                </label>
+                <div class="form-grid three">
+                  <label
+                    >URL / файл<input
+                      name="url"
+                      placeholder="/media/..." /></label
+                  ><label
+                    >Тип<select name="media_kind">
+                      <option value="image">Фото</option>
+                      <option value="video">Відео</option>
+                      <option value="text">Текст</option>
+                    </select></label
+                  ><label
+                    >Тривалість, с<input
+                      name="duration"
+                      type="number"
+                      min="3"
+                      max="300"
+                      value="12"
+                  /></label>
+                </div>
+                <div class="actions">
+                  <button class="primary">ДОДАТИ MEDIA</button>
+                </div>
+              </form>
+              <div id="mediaList" class="data-list"></div>
+            </section>
+            <section class="card">
+              <div class="section-title">
+                <h2>DIGITAL SIGNAGE SCHEDULER</h2>
+              </div>
+              <form id="signageForm">
+                <label>Назва<input name="name" value="Велика перерва" /></label>
+                <div class="form-grid">
+                  <label
+                    >Режим<select name="mode">
+                      <option value="media">Media</option>
+                      <option value="events">Події</option>
+                      <option value="welcome">Привітання</option>
+                      <option value="schedule">Розклад</option>
+                    </select></label
+                  ><label
+                    >Media<select name="media_id" id="signageMedia"></select
+                  ></label>
+                </div>
+                <div class="form-grid three">
+                  <label>Початок<input name="start_time" type="time" /></label
+                  ><label>Кінець<input name="end_time" type="time" /></label
+                  ><label
+                    >Пріоритет<input
+                      name="priority"
+                      type="number"
+                      min="0"
+                      max="9"
+                      value="5"
+                  /></label>
+                </div>
+                <label
+                  >Екран<input
+                    name="screen"
+                    value="all"
+                    placeholder="all / main-hall"
+                /></label>
+                <div class="actions">
+                  <button class="primary">ДОДАТИ ПРАВИЛО</button
+                  ><a class="btn ghost" href="/signage" target="_blank"
+                    >PREVIEW</a
+                  >
+                </div>
+              </form>
+              <div id="signageList" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-audio" class="tab">
+          <div class="grid">
+            <section class="card">
+              <div class="section-title"><h2>АУДІОПОДІЇ</h2></div>
+              <p class="hint">
+                Використовуйте локальний URL, наприклад /media/bell.mp3 або
+                існуючі /audio/*.mp3.
+              </p>
+              <form id="audioForm">
+                <label
+                  >Назва<input name="name" value="Попередження до уроку"
+                /></label>
+                <div class="form-grid three">
+                  <label>Час<input name="time" type="time" /></label
+                  ><label
+                    >URL аудіо<input
+                      name="url"
+                      placeholder="/audio/trivoga.mp3" /></label
+                  ><label
+                    >Гучність 0–1<input
+                      name="volume"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="1"
+                      value="0.8"
+                  /></label>
+                </div>
+                <label
+                  >Дні (MONDAY,TUESDAY...)<input
+                    name="daysText"
+                    value="MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY"
+                /></label>
+                <div class="actions">
+                  <button class="primary">ДОДАТИ</button>
+                </div>
+              </form>
+            </section>
+            <section class="card">
+              <div class="section-title"><h2>РОЗКЛАД АУДІО</h2></div>
+              <div id="audioList" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-music" class="tab">
+          <div class="grid">
+            <section class="card">
+              <div class="section-title">
+                <h2>MUSIC SCHEDULER</h2>
+                <span class="pill">BREAK + AFTER SCHOOL</span>
+              </div>
+              <form id="musicSettingsForm">
+                <div class="form-grid three">
+                  <label
+                    ><input name="music_enabled" type="checkbox" /> Music
+                    Scheduler увімкнений</label
+                  >
+                  <label
+                    ><input name="music_breaks_enabled" type="checkbox" /> Грати
+                    на перервах</label
+                  >
+                  <label
+                    ><input name="music_after_school_enabled" type="checkbox" />
+                    Грати після уроків</label
+                  >
+                </div>
+                <div class="form-grid four">
+                  <label
+                    >Після уроків до<input
+                      name="music_after_school_until"
+                      type="time"
+                      value="18:00"
+                  /></label>
+                  <label
+                    >Гучність, %<input
+                      name="music_volume_percent"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value="35"
+                  /></label>
+                  <label
+                    >Fade, с<input
+                      name="music_fade_seconds"
+                      type="number"
+                      min="0"
+                      max="20"
+                      value="2"
+                  /></label>
+                  <label
+                    >Fade перед уроком, с<input
+                      name="music_break_fade_before_end_seconds"
+                      type="number"
+                      min="0"
+                      max="180"
+                      value="30"
+                  /></label>
+                </div>
+                <div class="form-grid">
+                  <label
+                    ><input name="music_shuffle" type="checkbox" />
+                    Shuffle</label
+                  >
+                  <label
+                    >Основний екран<input
+                      name="music_main_screen_id"
+                      value="main-hall"
+                  /></label>
+                </div>
+                <div class="actions">
+                  <button class="primary" type="submit">
+                    ЗБЕРЕГТИ НАЛАШТУВАННЯ
+                  </button>
+                </div>
+              </form>
+              <div class="section-title" style="margin-top: 16px">
+                <h2>КЕРУВАННЯ</h2>
+                <span id="musicDesired" class="pill">—</span>
+              </div>
+              <div class="actions">
+                <button class="good" data-music-command="music-play">
+                  ▶ PLAY TV
+                </button>
+                <button class="warn" data-music-command="music-pause">
+                  Ⅱ PAUSE TV
+                </button>
+                <button class="ghost" data-music-command="music-next">
+                  ⏭ NEXT TV
+                </button>
+                <button class="danger" data-music-command="music-stop">
+                  ■ STOP TV
+                </button>
+                <button class="primary" data-music-command="music-test">
+                  📺 TV ТЕСТ 15 СЕК
+                </button>
+              </div>
+              <div id="musicNow" class="row-item" style="margin-top: 10px">
+                Очікування heartbeat від TV…
+              </div>
+
+              <div class="section-title" style="margin-top: 16px">
+                <h2>ЛОКАЛЬНЕ ПРОСЛУХОВУВАННЯ</h2>
+                <span class="pill">ЦЕЙ БРАУЗЕР</span>
+              </div>
+              <div class="row-item">
+                <b>Звук грає тільки на цьому комп’ютері / телефоні.</b>
+                <span
+                  >Не надсилається на Orange Pi або TV. Можна перевіряти
+                  навіть під час AIR_RAID.</span
+                >
+              </div>
+              <div class="actions" style="margin-top: 10px">
+                <button class="good" data-local-preview="">
+                  💻 ПРОСЛУХАТИ ПЕРШИЙ ТРЕК
+                </button>
+                <button class="danger" id="stopLocalPreview" type="button">
+                  ■ СТОП ЛОКАЛЬНО
+                </button>
+              </div>
+              <audio
+                id="localMusicPreview"
+                controls
+                preload="metadata"
+                style="width: 100%; margin-top: 10px"
+              ></audio>
+              <div
+                id="localPreviewNow"
+                class="row-item"
+                style="margin-top: 10px"
+              >
+                <b>Локальне прослуховування: STOP</b
+                ><span>Оберіть трек у плейлисті нижче.</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="section-title">
+                <h2>ДОДАТИ ТРЕК</h2>
+                <span class="pill">MP3 / WAV / OGG / M4A</span>
+              </div>
+              <div class="upload-box">
+                <input
+                  id="musicFile"
+                  type="file"
+                  accept="audio/*,.mp3,.wav,.ogg,.m4a"
+                />
+                <div class="actions">
+                  <button id="uploadMusic" class="primary" type="button">
+                    ЗАВАНТАЖИТИ ФАЙЛ
+                  </button>
+                </div>
+              </div>
+              <form id="musicTrackForm">
+                <div class="form-grid">
+                  <label>Назва<input name="title" required /></label>
+                  <label>Виконавець<input name="artist" /></label>
+                </div>
+                <label
+                  >URL / файл<input
+                    name="url"
+                    required
+                    placeholder="/media/...mp3"
+                /></label>
+                <div class="form-grid">
+                  <label
+                    >Плейлист<select name="playlist">
+                      <option value="both">Перерви + після уроків</option>
+                      <option value="break">Тільки перерви</option>
+                      <option value="after_school">Тільки після уроків</option>
+                    </select></label
+                  >
+                  <label
+                    >Порядок<input
+                      name="order"
+                      type="number"
+                      min="0"
+                      max="9999"
+                      value="100"
+                  /></label>
+                </div>
+                <div class="actions">
+                  <button class="primary" type="submit">
+                    ДОДАТИ ДО ПЛЕЙЛИСТА
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <section class="card wide">
+              <div class="section-title">
+                <h2>ПЛЕЙЛИСТИ</h2>
+                <span id="musicTrackCount" class="pill">0 треків</span>
+              </div>
+              <div id="musicTrackList" class="data-list"></div>
+            </section>
+            <section class="card wide">
+              <div class="section-title">
+                <h2>ДВА РІЗНІ ТЕСТИ</h2>
+                <span class="pill">LOCAL + TV</span>
+              </div>
+              <div class="row-item">
+                <b>💻 ЛОКАЛЬНО — слухаєте у браузері Operations.</b
+                ><span
+                  >Працює незалежно від режиму TV, у тому числі під час
+                  AIR_RAID. Це не звук у ліцеї.</span
+                >
+              </div>
+              <div class="row-item">
+                <b>📺 TV ТЕСТ 15 СЕК — слухаєте на Orange Pi / телевізорі.</b
+                ><span
+                  >Дозволений у NORMAL, але заблокований під час AIR_RAID /
+                  SILENCE / ALL_CLEAR та системних аудіоподій.</span
+                >
+              </div>
+            </section>
+            <section class="card wide">
+              <div class="section-title"><h2>ПРІОРИТЕТ АУДІО</h2></div>
+              <div class="row-item">
+                <b
+                  >1. Повітряна тривога → 2. Хвилина мовчання → 3. Системна
+                  аудіоподія → 4. Безпечний тест 15 с → 5. Музика на перерві →
+                  6. Музика після уроків</b
+                ><span
+                  >Під час уроку автоматична музика не грає, але Safe Test
+                  дозволяє перевірити звук рівно 15 секунд у
+                  NORMAL-режимі.</span
+                >
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-screens" class="tab">
+          <div class="grid">
+            <section class="card">
+              <div class="section-title"><h2>ЕКРАНИ</h2></div>
+              <div id="screenList" class="data-list"></div>
+            </section>
+            <section class="card">
+              <div class="section-title"><h2>КОРПУСИ / ПОВЕРХИ</h2></div>
+              <form id="campusForm">
+                <label>Назва корпусу<input name="name" /></label
+                ><label>Адреса<input name="address" /></label
+                ><label
+                  >Поверхи через кому<input
+                    name="floorsText"
+                    placeholder="1,2,3"
+                /></label>
+                <div class="actions">
+                  <button class="primary">ДОДАТИ КОРПУС</button>
+                </div>
+              </form>
+              <div id="campusList" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-stats" class="tab">
+          <div class="grid">
+            <section class="card">
+              <div class="section-title"><h2>НАВАНТАЖЕННЯ ВИКЛАДАЧІВ</h2></div>
+              <table class="stats-table">
+                <tbody id="teacherStats"></tbody>
+              </table>
+            </section>
+            <section class="card">
+              <div class="section-title"><h2>НАВАНТАЖЕННЯ КАБІНЕТІВ</h2></div>
+              <table class="stats-table">
+                <tbody id="roomStats"></tbody>
+              </table>
+            </section>
+            <section class="card wide">
+              <div class="section-title"><h2>AUDIT LOG</h2></div>
+              <div id="auditList" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+    <div id="toast" class="toast hidden"></div>
+    <script src="/js/auth.js"></script>
+    <script src="/js/slideshow-manager.js"></script>
+    <script src="/js/ops.js"></script>
+  </body>
+</html>

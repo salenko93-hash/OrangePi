@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LyceumTV — перегляд слайд-шоу</title>
+    <link rel="stylesheet" href="css/tv.css" />
+    <link rel="stylesheet" href="css/academic.css" />
+    <link rel="stylesheet" href="css/slideshow-preview.css" />
+    <script defer src="js/tv-profile.js"></script>
+  </head>
+  <body class="slideshow-preview">
+    <nav class="preview-toolbar" aria-label="Параметри перегляду">
+      <strong>ПЕРЕГЛЯД СЛАЙД-ШОУ</strong>
+      <label class="preview-button"
+        >ФОТО / ВІДЕО З КОМП’ЮТЕРА
+        <input
+          id="previewFiles"
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,.mp4,.webm"
+        />
+      </label>
+      <button id="previewLibrary" type="button">З МЕДІАТЕКИ</button>
+      <label class="preview-button"
+        >МУЗИКА З КОМП’ЮТЕРА
+        <input
+          id="previewMusic"
+          type="file"
+          accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,.mp3,.wav,.ogg,.m4a"
+        />
+      </label>
+      <button id="previewSound" type="button">УВІМКНУТИ ЗВУК</button>
+      <button id="previewFullscreen" type="button">НА ВЕСЬ ЕКРАН</button>
+      <a href="ops.html">КЕРУВАННЯ МЕДІА</a>
+      <p id="previewStatus" role="status" aria-live="polite">
+        Працює в будь-який день і час. Оберіть фото / відео та музику з
+        комп’ютера або використайте медіатеку.
+      </p>
+    </nav>
+    <div id="viewport">
+      <main id="stage" class="theme-normal after-school-info">
+        <section
+          id="afterSchoolInfo"
+          aria-label="Попередній перегляд слайд-шоу"
+        >
+          <h1 id="slideshowTitle">ЖИТТЯ ЛІЦЕЮ</h1>
+          <div class="after-school-content">
+            <section
+              id="afterSchoolSlideshow"
+              class="after-school-slideshow hidden"
+              aria-label="Фотогалерея ліцею"
+            >
+              <div class="after-school-slide">
+                <div class="slide-backdrop"></div>
+                <img alt="" /><video playsinline preload="metadata"></video>
+              </div>
+              <div class="after-school-slide">
+                <div class="slide-backdrop"></div>
+                <img alt="" /><video playsinline preload="metadata"></video>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="js/slideshow.js"></script>
+    <script src="js/slideshow-preview.js"></script>
+  </body>
+</html>

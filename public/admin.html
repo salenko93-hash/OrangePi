@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LyceumTV 3.7.0 Smart Operations</title>
+    <link rel="stylesheet" href="/css/admin.css" />
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <div>
+          <h1>LyceumTV 3.7.0 Smart Operations</h1>
+          <p>
+            Orange Pi • TV • PWA • Teacher View • Operations • Digital
+            Signage
+          </p>
+        </div>
+        <div class="top-actions">
+          <a href="/" target="_blank">TV</a>
+          <a href="/demo" target="_blank" rel="noopener">DEMO ↗</a>
+          <a href="/ops" target="_blank">OPERATIONS</a>
+          <a href="/teacher" target="_blank">TEACHER</a>
+          <a href="/campus/" target="_blank">CAMPUS</a>
+          <button type="button" id="refreshAll" class="secondary">
+            ОНОВИТИ СТАН
+          </button>
+        </div>
+      </header>
+
+      <section class="auth">
+        <label
+          >Admin key
+          <input
+            id="adminKey"
+            type="password"
+            placeholder="Введіть ключ адміністратора"
+        /></label>
+        <button id="connect" type="button">ПІДКЛЮЧИТИСЯ</button>
+        <span id="authState"></span>
+      </section>
+
+      <nav id="tabs" class="tabs disabled">
+        <button type="button" data-tab="dashboard" class="active">
+          ПАНЕЛЬ
+        </button>
+        <button type="button" data-tab="schedule">РОЗКЛАД</button>
+        <button type="button" data-tab="demo">DEMO / ПЕРЕГЛЯД</button>
+        <button type="button" data-tab="import">XLSX ІМПОРТ</button>
+        <button type="button" data-tab="content">КОНТЕНТ</button>
+        <button type="button" data-tab="screens">ЕКРАНИ</button>
+        <button type="button" data-tab="mobile">MOBILE / QR</button>
+        <button type="button" data-tab="telegram">TELEGRAM</button>
+        <button type="button" data-tab="system">СИСТЕМА</button>
+      </nav>
+
+      <div id="workspace" class="disabled">
+        <section id="tab-dashboard" class="tab-page active">
+          <div id="statusGrid" class="status-grid"></div>
+
+          <section class="card quick-card">
+            <h2>ШВИДКІ ДІЇ</h2>
+            <div class="actions">
+              <button type="button" data-action="sync">СИНХРОНІЗУВАТИ</button>
+              <button type="button" data-action="refresh_weather">
+                ОНОВИТИ ПОГОДУ
+              </button>
+              <button type="button" data-action="poll_alerts">
+                ОНОВИТИ ТРИВОГУ
+              </button>
+              <button type="button" data-action="alarm_on" class="danger">
+                РУЧНА ТРИВОГА
+              </button>
+              <button type="button" data-action="alarm_off" class="good">
+                ВІДБІЙ
+              </button>
+              <button
+                type="button"
+                data-action="test_silence"
+                class="secondary"
+              >
+                ТЕСТ ХВИЛИНИ МОВЧАННЯ
+              </button>
+            </div>
+          </section>
+
+          <div class="grid">
+            <section class="card">
+              <h2>RASPBERRY PI</h2>
+              <div id="systemGrid" class="mini-grid"></div>
+            </section>
+            <section class="card">
+              <h2>ОСТАННІ ПОДІЇ</h2>
+              <div id="recentLogs" class="log-list compact"></div>
+            </section>
+          </div>
+        </section>
+
+        <section
+          id="tab-demo"
+          class="tab-page"
+          aria-label="Демонстрація екрана LyceumTV"
+        >
+          <section class="card wide demo-card">
+            <div class="demo-heading">
+              <div>
+                <h2>DEMO — ПЕРЕГЛЯД ІНТЕРФЕЙСУ TV</h2>
+                <p class="hint">
+                  Оберіть режим, дату, день, тиждень та урок на панелі всередині
+                  макета. Розклад демонстраційний — жодних команд тривоги, звуку
+                  чи змін до сервера.
+                </p>
+              </div>
+              <a href="/demo" target="_blank" rel="noopener"
+                >ВІДКРИТИ НА ВЕСЬ ЕКРАН ↗</a
+              >
+            </div>
+            <div class="demo-frame-wrap">
+              <iframe
+                id="demoPreview"
+                title="Автономний DEMO LyceumTV"
+                data-src="/demo"
+                loading="lazy"
+                referrerpolicy="same-origin"
+                allow="fullscreen"
+                allowfullscreen
+              ></iframe>
+            </div>
+            <p class="hint">
+              DEMO працює зі знімком чотирьох розкладів, вбудованим у проєкт.
+              Відкривши в окремій вкладці, натисніть «На весь екран» для
+              перегляду в роздільності телевізора.
+            </p>
+            <div class="actions">
+              <a href="/slideshow-preview" target="_blank" rel="noopener"
+                >ПЕРЕГЛЯД СЛАЙД-ШОУ — У БУДЬ-ЯКИЙ ЧАС ↗</a
+              >
+            </div>
+          </section>
+        </section>
+
+        <section id="tab-schedule" class="tab-page">
+          <div class="grid">
+            <section class="card wide">
+              <h2>ЗАМІНИ УРОКІВ</h2>
+              <form id="subForm" class="editor-form">
+                <input type="hidden" name="id" />
+                <div class="row four">
+                  <label>Дата <input name="date" type="date" required /></label>
+                  <label
+                    >Клас
+                    <select name="class" required>
+                      <option>10-А</option>
+                      <option>10-Б</option>
+                      <option>10-В</option>
+                      <option>10-Г</option>
+                      <option>11-А</option>
+                      <option>11-Б</option>
+                      <option>11-В</option>
+                      <option>11-Г</option>
+                    </select>
+                  </label>
+                  <label
+                    >Урок
+                    <input
+                      name="lesson"
+                      type="number"
+                      min="1"
+                      max="12"
+                      value="1"
+                      required
+                  /></label>
+                  <label
+                    >Режим
+                    <select name="scope">
+                      <option value="both">Звичайний + укриття</option>
+                      <option value="normal">Тільки звичайний</option>
+                      <option value="shelter">Тільки укриття</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="check"
+                  ><input name="active" type="checkbox" checked /> Активна
+                  заміна</label
+                >
+                <div class="entry-editor">
+                  <b>Група / запис 1</b>
+                  <div class="row four">
+                    <label
+                      >Група
+                      <select name="subgroup1">
+                        <option value="">—</option>
+                        <option>ГР. 1</option>
+                        <option>ГР. 2</option>
+                      </select></label
+                    >
+                    <label>Предмет <input name="subject1" required /></label>
+                    <label>Кабінет <input name="room1" /></label>
+                    <label>Викладач <input name="teacher1" /></label>
+                  </div>
+                </div>
+                <div class="entry-editor">
+                  <b>Група / запис 2 (необов’язково)</b>
+                  <div class="row four">
+                    <label
+                      >Група
+                      <select name="subgroup2">
+                        <option value="">—</option>
+                        <option>ГР. 1</option>
+                        <option>ГР. 2</option>
+                      </select></label
+                    >
+                    <label>Предмет <input name="subject2" /></label>
+                    <label>Кабінет <input name="room2" /></label>
+                    <label>Викладач <input name="teacher2" /></label>
+                  </div>
+                </div>
+                <label>Примітка <input name="note" /></label>
+                <div class="actions">
+                  <button type="submit">ЗБЕРЕГТИ ЗАМІНУ</button>
+                  <button type="button" id="subReset" class="secondary">
+                    НОВА
+                  </button>
+                </div>
+              </form>
+              <div id="subList" class="data-list"></div>
+            </section>
+
+            <section class="card">
+              <h2>ДЗВІНКИ</h2>
+              <p class="hint">
+                Локальний розклад дзвінків має пріоритет над JSON-розкладами та
+                не стирається GitHub sync.
+              </p>
+              <div id="bellsEditor"></div>
+              <button type="button" id="saveBells">ЗБЕРЕГТИ ДЗВІНКИ</button>
+            </section>
+
+            <section class="card">
+              <h2>КАЛЕНДАР • ЛОКАЛЬНІ ВИНЯТКИ</h2>
+              <form id="dayOffForm" class="editor-form">
+                <input type="hidden" name="id" />
+                <label
+                  >Вихідний / особливий день
+                  <input name="date" type="date" required
+                /></label>
+                <label
+                  >Назва
+                  <input name="label" placeholder="Наприклад: Педагогічна рада"
+                /></label>
+                <button type="submit">ДОДАТИ ДЕНЬ</button>
+              </form>
+              <form id="rangeForm" class="editor-form">
+                <input type="hidden" name="id" />
+                <div class="row">
+                  <label>Від <input name="from" type="date" required /></label>
+                  <label>До <input name="to" type="date" required /></label>
+                </div>
+                <label
+                  >Назва
+                  <input
+                    name="label"
+                    placeholder="Наприклад: Додаткові канікули"
+                /></label>
+                <button type="submit">ДОДАТИ ПЕРІОД</button>
+              </form>
+              <div id="calendarList" class="data-list"></div>
+            </section>
+
+            <section class="card">
+              <h2>НАВЧАЛЬНИЙ ТИЖДЕНЬ</h2>
+              <form id="scheduleSettings" class="settings-form">
+                <label
+                  >Старт чисельника
+                  <input name="numerator_start_date" type="date"
+                /></label>
+                <label class="check"
+                  ><input name="break_announcements_enabled" type="checkbox" />
+                  Оголошення на перервах і після уроків до 17:00</label
+                >
+                <label
+                  >Ротація оголошень, с
+                  <input
+                    name="announcement_rotation_seconds"
+                    type="number"
+                    min="15"
+                /></label>
+                <label
+                  >Швидкість бігучого рядка:
+                  <output id="tickerSpeedValue" for="tickerSpeedInput"
+                    >115 пікс/с</output
+                  ><input
+                    id="tickerSpeedInput"
+                    name="announcement_ticker_speed"
+                    type="range"
+                    min="50"
+                    max="250"
+                    step="5"
+                    value="115"
+                /></label>
+                <small
+                  >50 — повільно, 115 — звичайно, 250 — швидко. Застосовується
+                  після «ЗБЕРЕГТИ».</small
+                >
+                <label
+                  >Профіль екрана
+                  <select name="screen_profile">
+                    <option value="ADAPTIVE_1920x1080">
+                      ADAPTIVE 1920×1080
+                    </option>
+                    <option>AUTO</option>
+                    <option>FHD</option>
+                    <option>HD</option>
+                    <option>OTHER</option>
+                  </select>
+                </label>
+                <button type="submit">ЗБЕРЕГТИ</button>
+              </form>
+            </section>
+
+            <section class="card">
+              <h2>СЛАЙД-ШОУ ПІСЛЯ УРОКІВ</h2>
+              <form id="slideshowSettings" class="settings-form">
+                <label
+                  >Назва слайд-шоу
+                  <input
+                    name="slideshow_title"
+                    maxlength="120"
+                    placeholder="ЖИТТЯ ЛІЦЕЮ"
+                  />
+                </label>
+                <p class="hint">
+                  На TV показується тільки ця назва та фотографії. Оголошення,
+                  назва файла і лічильник фото не виводяться.
+                </p>
+                <button type="submit">ЗБЕРЕГТИ НАЗВУ</button>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-import" class="tab-page">
+          <div class="grid">
+            <section class="card wide">
+              <h2>XLSX IMPORT CENTER</h2>
+              <p class="hint">
+                Файл спочатку проходить preview та перевірку. Робочий розклад не
+                змінюється, доки ви не натиснете «ЗАСТОСУВАТИ». Перед
+                застосуванням автоматично створюється backup.
+              </p>
+              <div class="import-grid">
+                <label
+                  >Файл .xlsx
+                  <input
+                    id="xlsxFile"
+                    type="file"
+                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  />
+                </label>
+                <label
+                  >Куди імпортувати
+                  <select id="xlsxTarget">
+                    <option value="schedule_numerator">
+                      Звичайний • ЧИСЕЛЬНИК
+                    </option>
+                    <option value="schedule_denominator">
+                      Звичайний • ЗНАМЕННИК
+                    </option>
+                    <option value="shelter_numerator">
+                      Укриття • ЧИСЕЛЬНИК
+                    </option>
+                    <option value="shelter_denominator">
+                      Укриття • ЗНАМЕННИК
+                    </option>
+                  </select>
+                </label>
+              </div>
+              <div class="actions">
+                <button type="button" id="xlsxPreview">
+                  ПЕРЕВІРИТИ / PREVIEW
+                </button>
+                <button type="button" id="xlsxApply" class="good" disabled>
+                  ЗАСТОСУВАТИ РОЗКЛАД
+                </button>
+              </div>
+              <div id="xlsxSummary" class="result-box">Оберіть XLSX-файл.</div>
+              <div id="xlsxIssues" class="data-list"></div>
+              <div id="xlsxSamples" class="import-samples"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-content" class="tab-page">
+          <div class="grid">
+            <section class="card">
+              <h2>ОГОЛОШЕННЯ</h2>
+              <form id="announcementForm" class="editor-form">
+                <input type="hidden" name="id" />
+                <label class="check"
+                  ><input name="active" type="checkbox" checked />
+                  Активне</label
+                >
+                <label>Заголовок <input name="title" /></label>
+                <label
+                  >Текст <textarea name="message" rows="3" required></textarea>
+                </label>
+                <div class="row three">
+                  <label>Від <input name="valid_from" type="date" /></label>
+                  <label>До <input name="valid_to" type="date" /></label>
+                  <label
+                    >Пріоритет
+                    <input
+                      name="priority"
+                      type="number"
+                      min="0"
+                      max="9"
+                      value="5"
+                  /></label>
+                </div>
+                <div class="actions">
+                  <button type="submit">ЗБЕРЕГТИ ОГОЛОШЕННЯ</button>
+                  <button
+                    type="button"
+                    id="announcementReset"
+                    class="secondary"
+                  >
+                    НОВЕ
+                  </button>
+                </div>
+              </form>
+              <div
+                id="announcementPreview"
+                role="status"
+                aria-live="polite"
+                style="
+                  background: #092b67;
+                  color: #fff;
+                  border-radius: 12px;
+                  padding: 14px;
+                  margin: 12px 0;
+                  overflow: hidden;
+                "
+              >
+                <strong>ПЕРЕГЛЯД НА ЕКРАНІ</strong>
+                <div id="announcementPreviewRail" class="ticker-preview-rail">
+                  <span
+                    id="announcementPreviewText"
+                    class="ticker-preview-track"
+                    >ОГОЛОШЕННЯ • Введіть текст оголошення</span
+                  >
+                </div>
+              </div>
+              <div id="announcementList" class="data-list"></div>
+            </section>
+
+            <section class="card">
+              <h2>ПОДІЇ</h2>
+              <form id="eventForm" class="editor-form">
+                <input type="hidden" name="id" />
+                <label class="check"
+                  ><input name="active" type="checkbox" checked /> Активна
+                  подія</label
+                >
+                <label>Назва <input name="title" required /></label>
+                <label
+                  >Опис <textarea name="message" rows="3"></textarea>
+                </label>
+                <div class="row three">
+                  <label>Дата <input name="date" type="date" /></label>
+                  <label>Початок <input name="start_time" type="time" /></label>
+                  <label>Кінець <input name="end_time" type="time" /></label>
+                </div>
+                <label
+                  >Пріоритет
+                  <input
+                    name="priority"
+                    type="number"
+                    min="0"
+                    max="9"
+                    value="5"
+                /></label>
+                <div class="actions">
+                  <button type="submit">ЗБЕРЕГТИ ПОДІЮ</button>
+                  <button type="button" id="eventReset" class="secondary">
+                    НОВА
+                  </button>
+                </div>
+              </form>
+              <div id="eventList" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-screens" class="tab-page">
+          <div class="grid">
+            <section class="card wide">
+              <div class="card-title-row">
+                <h2>MULTI-TV MANAGER</h2>
+                <span id="screenCount" class="badge">0 ONLINE</span>
+              </div>
+              <p class="hint">
+                Екран реєструється автоматично, коли відкриває TV URL з
+                параметром <code>?screen=ID</code>. Наприклад:
+                <code>/?screen=hall-main</code>.
+              </p>
+              <form id="screenForm" class="editor-form">
+                <div class="row four">
+                  <label
+                    >ID
+                    <input
+                      name="id"
+                      placeholder="hall-main"
+                      pattern="[A-Za-z0-9._-]{1,48}"
+                      required
+                  /></label>
+                  <label>Назва <input name="name" placeholder="Хол" /></label>
+                  <label
+                    >Профіль
+                    <select name="profile">
+                      <option value="schedule">Розклад</option>
+                      <option value="auto">Авто</option>
+                      <option value="info">Інформація</option>
+                      <option value="shelter">Укриття</option>
+                    </select>
+                  </label>
+                  <label class="check"
+                    ><input name="enabled" type="checkbox" checked />
+                    Активний</label
+                  >
+                </div>
+                <div class="row three">
+                  <label
+                    >Корпус
+                    <input name="building" placeholder="Головний корпус"
+                  /></label>
+                  <label>Поверх <input name="floor" placeholder="1" /></label>
+                  <label
+                    >Зона <input name="zone" placeholder="Хол / актова зала"
+                  /></label>
+                </div>
+                <button type="submit">ЗБЕРЕГТИ ПРОФІЛЬ</button>
+              </form>
+              <div id="screenList" class="data-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-mobile" class="tab-page">
+          <div class="grid">
+            <section class="card">
+              <h2>MOBILE SCHEDULE / PWA</h2>
+              <form id="mobileSettings" class="settings-form">
+                <label class="check"
+                  ><input name="mobile_enabled" type="checkbox" /> Увімкнути
+                  мобільний розклад</label
+                >
+                <label>Назва <input name="mobile_title" /></label>
+                <label
+                  >Публічна адреса Mobile / QR
+                  <input
+                    name="mobile_public_url"
+                    type="url"
+                    placeholder="https://IP_ORANGE_PI/mobile/"
+                  />
+                </label>
+                <p class="hint">
+                  Ця адреса записується в QR на TV. Вона має відкриватися з
+                  телефона у Wi‑Fi мережі, тому не використовуйте 127.0.0.1.
+                </p>
+                <button type="submit">ЗБЕРЕГТИ</button>
+              </form>
+              <label>Адреса для учнів <input id="mobileUrl" readonly /></label>
+              <div class="actions">
+                <a id="openMobile" href="/mobile/" target="_blank"
+                  >ВІДКРИТИ MOBILE</a
+                >
+                <button type="button" id="copyMobile" class="secondary">
+                  КОПІЮВАТИ URL
+                </button>
+              </div>
+              <p class="hint">
+                Учень обирає клас, бачить сьогодні/завтра, актуальні заміни та
+                дзвінки. Сторінку можна встановити на телефон як PWA.
+              </p>
+            </section>
+            <section class="card qr-card">
+              <h2>QR-КОД ДЛЯ КЛАСУ</h2>
+              <label
+                >Клас
+                <select id="mobileQrClass">
+                  <option>10-А</option>
+                  <option>10-Б</option>
+                  <option>10-В</option>
+                  <option>10-Г</option>
+                  <option>11-А</option>
+                  <option>11-Б</option>
+                  <option>11-В</option>
+                  <option>11-Г</option>
+                </select>
+              </label>
+              <img id="mobileQr" alt="QR-код мобільного розкладу" />
+              <label
+                >Посилання класу <input id="mobileClassUrl" readonly
+              /></label>
+              <div class="actions">
+                <a id="openMobileClass" href="/mobile/" target="_blank"
+                  >ВІДКРИТИ КЛАС</a
+                >
+                <button type="button" id="copyMobileClass" class="secondary">
+                  КОПІЮВАТИ URL КЛАСУ
+                </button>
+              </div>
+              <p class="hint">
+                QR формується локально на Orange Pi і відкриває одразу
+                вибраний клас.
+              </p>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-telegram" class="tab-page">
+          <div class="grid">
+            <section class="card">
+              <h2>TELEGRAM MONITORING</h2>
+              <form id="telegramSettings" class="settings-form">
+                <label class="check"
+                  ><input name="telegram_enabled" type="checkbox" /> Увімкнути
+                  моніторинг</label
+                >
+                <label
+                  >Bot token
+                  <input
+                    name="telegram_bot_token"
+                    type="password"
+                    placeholder="порожньо — не змінювати"
+                /></label>
+                <label
+                  >Chat ID
+                  <input
+                    name="telegram_chat_id"
+                    placeholder="-100… або ID користувача"
+                /></label>
+                <label class="check"
+                  ><input name="telegram_commands_enabled" type="checkbox" />
+                  Дозволити команди /status /screens /sync /restart</label
+                >
+                <div class="row">
+                  <label
+                    >Offline після, с
+                    <input
+                      name="screen_offline_seconds"
+                      type="number"
+                      min="15"
+                      max="3600"
+                  /></label>
+                  <label
+                    >Температурний поріг, °C
+                    <input
+                      name="telegram_cpu_temp_alert_c"
+                      type="number"
+                      min="50"
+                      max="90"
+                  /></label>
+                </div>
+                <button type="submit">ЗБЕРЕГТИ TELEGRAM</button>
+              </form>
+              <div class="actions">
+                <button type="button" data-action="telegram_test" class="good">
+                  НАДІСЛАТИ ТЕСТ
+                </button>
+                <button
+                  type="button"
+                  data-action="telegram_reconnect"
+                  class="secondary"
+                >
+                  ПЕРЕПІДКЛЮЧИТИ КОМАНДИ
+                </button>
+              </div>
+              <div id="telegramDiag" class="result-box">
+                Стан Telegram ще не завантажено.
+              </div>
+            </section>
+            <section class="card">
+              <h2>КОМАНДИ</h2>
+              <div class="command-list">
+                <code>/ping</code><span>перевірка командного каналу</span>
+                <code>/status</code><span>стан Orange Pi та LyceumTV</span>
+                <code>/screens</code><span>ONLINE/OFFLINE екрани</span>
+                <code>/version</code><span>версія LyceumTV</span>
+                <code>/sync</code><span>ручна синхронізація</span>
+                <code>/restart</code><span>перезапуск сервісу LyceumTV</span>
+              </div>
+              <p class="hint">
+                Команди приймаються тільки від Chat ID, вказаного вище. Bot
+                token не повертається браузеру після збереження.
+              </p>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-system" class="tab-page">
+          <div class="grid">
+            <section class="card">
+              <h2>СИНХРОНІЗАЦІЯ ТА ДЖЕРЕЛА</h2>
+              <form id="syncSettings" class="settings-form">
+                <label
+                  >Manifest URL<textarea
+                    name="manifest_url"
+                    rows="3"
+                  ></textarea>
+                </label>
+                <label
+                  >Google Apps Script URL<textarea
+                    name="sheets_url"
+                    rows="3"
+                  ></textarea>
+                </label>
+                <label
+                  >Автосинхронізація, с
+                  <input name="sync_interval_seconds" type="number" min="60"
+                /></label>
+                <label class="check"
+                  ><input name="pin_local_denominator" type="checkbox" /> Не
+                  перезаписувати локальний знаменник</label
+                >
+                <button type="submit">ЗБЕРЕГТИ ДЖЕРЕЛА</button>
+              </form>
+            </section>
+
+            <section class="card">
+              <h2>ТРИВОГА</h2>
+              <form id="alarmSettings" class="settings-form">
+                <label>UID <input name="alerts_uid" readonly /></label>
+                <label>Alerts endpoint <input name="alerts_endpoint" /></label>
+                <label
+                  >API token
+                  <input
+                    name="alerts_token"
+                    type="password"
+                    placeholder="порожньо — не змінювати"
+                /></label>
+                <label
+                  >Опитування, с
+                  <input name="alerts_poll_seconds" type="number" min="5"
+                /></label>
+                <label class="check"
+                  ><input name="alarm_sound_enabled" type="checkbox" />
+                  TRIVOGA.mp3</label
+                >
+                <label
+                  >Гучність, %
+                  <input
+                    name="alarm_volume_percent"
+                    type="range"
+                    min="0"
+                    max="100" /><output data-for="alarm_volume_percent"></output
+                ></label>
+                <label
+                  >Екран відбою, с
+                  <input
+                    name="all_clear_seconds"
+                    type="number"
+                    min="0"
+                    max="120"
+                /></label>
+                <button type="submit">ЗБЕРЕГТИ</button>
+              </form>
+            </section>
+
+            <section class="card">
+              <h2>ПОГОДА</h2>
+              <form id="weatherSettings" class="settings-form">
+                <label class="check"
+                  ><input name="weather_enabled" type="checkbox" /> Показувати
+                  погоду</label
+                >
+                <label>Місто <input name="weather_city" /></label>
+                <div class="row">
+                  <label
+                    >Широта
+                    <input name="weather_latitude" type="number" step="0.0001"
+                  /></label>
+                  <label
+                    >Довгота
+                    <input name="weather_longitude" type="number" step="0.0001"
+                  /></label>
+                </div>
+                <label
+                  >Оновлення, с
+                  <input name="weather_refresh_seconds" type="number" min="60"
+                /></label>
+                <button type="submit">ЗБЕРЕГТИ</button>
+              </form>
+            </section>
+
+            <section class="card">
+              <h2>ХВИЛИНА МОВЧАННЯ</h2>
+              <form id="silenceSettings" class="settings-form">
+                <label class="check"
+                  ><input name="minute_silence_enabled" type="checkbox" />
+                  Увімкнено</label
+                >
+                <label
+                  >Час <input name="minute_silence_time" type="time"
+                /></label>
+                <label
+                  >Гучність, %
+                  <input
+                    name="minute_silence_volume_percent"
+                    type="range"
+                    min="0"
+                    max="100" /><output
+                    data-for="minute_silence_volume_percent"
+                  ></output
+                ></label>
+                <button type="submit">ЗБЕРЕГТИ</button>
+              </form>
+            </section>
+
+            <section class="card wide">
+              <h2>SMART OPERATIONS 3.3</h2>
+              <form id="smartOpsSettings" class="settings-form">
+                <div class="row three">
+                  <label
+                    >Dispatcher key
+                    <input
+                      name="dispatcher_key"
+                      type="password"
+                      placeholder="порожньо — не змінювати"
+                  /></label>
+                  <label
+                    >Teacher key
+                    <input
+                      name="teacher_key"
+                      type="password"
+                      placeholder="порожньо — не змінювати"
+                  /></label>
+                  <label>Назва Campus <input name="campus_name" /></label>
+                </div>
+                <div class="row three">
+                  <label class="check"
+                    ><input name="notifications_enabled" type="checkbox" /> PWA
+                    сповіщення</label
+                  >
+                  <label class="check"
+                    ><input name="auto_notify_substitutions" type="checkbox" />
+                    Автосповіщення про заміни</label
+                  >
+                  <label class="check"
+                    ><input name="health_alerts_enabled" type="checkbox" />
+                    Health alerts</label
+                  >
+                </div>
+                <div class="row three">
+                  <label
+                    >CPU warning, °C
+                    <input
+                      name="health_cpu_warn_c"
+                      type="number"
+                      min="50"
+                      max="95"
+                  /></label>
+                  <label
+                    >Диск warning, %
+                    <input
+                      name="health_disk_warn_percent"
+                      type="number"
+                      min="50"
+                      max="99"
+                  /></label>
+                  <label
+                    >RAM warning, %
+                    <input
+                      name="health_memory_warn_percent"
+                      type="number"
+                      min="50"
+                      max="99"
+                  /></label>
+                </div>
+                <div class="row three">
+                  <label class="check"
+                    ><input name="signage_enabled" type="checkbox" /> Digital
+                    Signage</label
+                  >
+                  <label class="check"
+                    ><input name="audio_events_enabled" type="checkbox" />
+                    Аудіоподії</label
+                  >
+                  <label class="check"
+                    ><input name="cloud_mirror_enabled" type="checkbox" /> Cloud
+                    Mirror</label
+                  >
+                </div>
+                <label
+                  >Cloud Mirror URL
+                  <input
+                    name="cloud_mirror_url"
+                    placeholder="https://.../lyceumtv-ingest"
+                /></label>
+                <label
+                  >Cloud Mirror token
+                  <input
+                    name="cloud_mirror_token"
+                    type="password"
+                    placeholder="порожньо — не змінювати"
+                /></label>
+                <button type="submit">ЗБЕРЕГТИ SMART OPERATIONS</button>
+              </form>
+              <div class="actions">
+                <a href="/ops" target="_blank">ВІДКРИТИ OPERATIONS CENTER</a>
+                <a href="/teacher" target="_blank">ВІДКРИТИ TEACHER VIEW</a>
+                <a href="/campus/" target="_blank">ВІДКРИТИ SMART CAMPUS</a>
+              </div>
+            </section>
+
+            <section class="card wide">
+              <h2>BACKUP / RESTORE</h2>
+              <div class="actions">
+                <button type="button" id="createBackup">СТВОРИТИ BACKUP</button>
+              </div>
+              <div id="backupList" class="data-list"></div>
+            </section>
+
+            <section class="card">
+              <h2>OTA-ОНОВЛЕННЯ</h2>
+              <form id="otaSettings" class="settings-form">
+                <label
+                  >OTA manifest URL<textarea
+                    name="ota_manifest_url"
+                    rows="3"
+                    placeholder="https://.../ota_manifest.json"
+                  ></textarea>
+                </label>
+                <button type="submit">ЗБЕРЕГТИ URL</button>
+              </form>
+              <div class="actions">
+                <button type="button" id="otaCheck">
+                  ПЕРЕВІРИТИ ОНОВЛЕННЯ
+                </button>
+                <button type="button" id="otaApply" class="good">
+                  ВСТАНОВИТИ ОНОВЛЕННЯ
+                </button>
+              </div>
+              <pre id="otaState" class="result-box"></pre>
+            </section>
+
+            <section class="card">
+              <h2>ДОСТУП / СЕРВІС</h2>
+              <form id="accessSettings" class="settings-form">
+                <label
+                  >Новий Admin key
+                  <input
+                    name="admin_key"
+                    type="password"
+                    placeholder="порожньо — не змінювати"
+                /></label>
+                <button type="submit">ЗМІНИТИ КЛЮЧ</button>
+              </form>
+              <button type="button" data-action="restart_app" class="secondary">
+                ПЕРЕЗАПУСТИТИ LYCEUMTV
+              </button>
+            </section>
+
+            <section class="card wide">
+              <div class="card-title-row">
+                <h2>ЖУРНАЛ ПОДІЙ</h2>
+                <button type="button" id="clearLogs" class="secondary">
+                  ОЧИСТИТИ
+                </button>
+              </div>
+              <div id="logList" class="log-list"></div>
+            </section>
+          </div>
+        </section>
+      </div>
+
+      <div id="toast" class="toast hidden"></div>
+      <script src="/js/auth.js"></script>
+    <script src="/js/admin.js"></script>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LyceumTV • Teacher View</title>
+    <link rel="stylesheet" href="/css/operations.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"
+        ><img src="/img/logo_white.png" /><span
+          ><b>LyceumTV Teacher View</b
+          ><small>МОЇ УРОКИ • КАБІНЕТИ • ЗАМІНИ</small></span
+        ></a
+      >
+      <div class="top-actions">
+        <a class="btn ghost" href="/mobile/">Mobile</a
+        ><a class="btn ghost" href="/campus/">Smart Campus</a>
+      </div>
+    </header>
+    <main class="container">
+      <section id="signin" class="card signin">
+        <div class="eyebrow">TEACHER VIEW</div>
+        <h1>Розклад викладача</h1>
+        <p class="hint">
+          Введіть Teacher key. Ключ зберігається лише у цьому браузері.
+        </p>
+        <div class="auth">
+          <input
+            id="roleKey"
+            type="password"
+            placeholder="Teacher key"
+          /><button id="connect" class="primary">ПІДКЛЮЧИТИСЯ</button>
+        </div>
+      </section>
+      <section id="app" class="hidden">
+        <div class="card hero">
+          <div>
+            <div class="eyebrow">LYCEUM SMART CAMPUS</div>
+            <h1 id="teacherTitle">Мої уроки</h1>
+            <p id="dayInfo"></p>
+          </div>
+          <div class="teacher-toolbar">
+            <select id="teacherSelect"></select
+            ><input id="dateInput" type="date" /><button
+              id="refresh"
+              class="primary"
+            >
+              ОНОВИТИ
+            </button>
+          </div>
+        </div>
+        <div id="teacherSummary" class="teacher-summary"></div>
+        <div class="grid">
+          <section class="card">
+            <div class="section-title">
+              <h2>РОЗКЛАД</h2>
+              <span id="lessonCount" class="pill">0 уроків</span>
+            </div>
+            <div id="lessons" class="lesson-list"></div>
+          </section>
+          <section class="card">
+            <div class="section-title">
+              <h2>СПОВІЩЕННЯ</h2>
+              <button id="notifyBtn" class="ghost">УВІМКНУТИ</button>
+            </div>
+            <div id="notifications" class="notification-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <div id="toast" class="toast hidden"></div>
+    <script src="/js/auth.js"></script>
+    <script src="/js/teacher.js"></script>
+  </body>
+</html>

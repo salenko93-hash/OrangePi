@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lyceum Smart Campus</title>
+    <link rel="stylesheet" href="/css/operations.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/campus/"
+        ><img src="/img/logo_white.png" /><span
+          ><b>Lyceum Smart Campus</b
+          ><small>РОЗКЛАД • ОГОЛОШЕННЯ • ПОДІЇ</small></span
+        ></a
+      >
+      <div class="top-actions">
+        <a class="btn ghost" href="/mobile/">Mobile / PWA</a>
+      </div>
+    </header>
+    <main class="container">
+      <section class="card campus-hero">
+        <img src="/img/logo_white.png" />
+        <div class="eyebrow">SMART CAMPUS SERVICE PAGE</div>
+        <h1 id="campusName">Lyceum Smart Campus</h1>
+        <p id="campusMeta" class="hint">Завантаження…</p>
+        <img
+          id="campusQr"
+          style="
+            width: 150px;
+            height: 150px;
+            background: #fff;
+            padding: 7px;
+            border-radius: 14px;
+          "
+          alt="QR Smart Campus"
+        />
+      </section>
+      <div class="grid">
+        <section class="card wide">
+          <div class="section-title">
+            <h2>ОБЕРІТЬ КЛАС</h2>
+            <span id="weekPill" class="pill">—</span>
+          </div>
+          <div id="classGrid" class="class-grid"></div>
+        </section>
+        <section class="card">
+          <div class="section-title"><h2>ОГОЛОШЕННЯ</h2></div>
+          <div id="announcements" class="data-list"></div>
+        </section>
+        <section class="card">
+          <div class="section-title"><h2>ПОДІЇ СЬОГОДНІ</h2></div>
+          <div id="events" class="data-list"></div>
+        </section>
+        <section class="card wide">
+          <div class="section-title"><h2>РОЗКЛАД ДЗВІНКІВ</h2></div>
+          <div id="bells" class="free-rooms"></div>
+        </section>
+      </div>
+    </main>
+    <div id="toast" class="toast hidden"></div>
+    <script src="/js/campus.js"></script>
+  </body>
+</html>

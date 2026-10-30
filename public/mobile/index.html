@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#071a33" />
+    <title>LyceumTV • Мобільний розклад</title>
+    <link rel="manifest" href="/mobile/manifest.webmanifest" />
+    <link rel="stylesheet" href="/mobile/mobile.css" />
+    <link rel="icon" href="/img/logo_white.png" />
+  </head>
+  <body>
+    <header class="hero">
+      <img src="/img/logo_white.png" alt="Ліцей" class="logo" />
+      <div>
+        <div class="eyebrow">LYCEUMTV SMART CAMPUS</div>
+        <h1 id="pageTitle">Розклад ліцею</h1>
+        <p id="statusLine">Актуальний розклад, заміни та дзвінки</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="controls">
+        <label
+          >Клас
+          <select id="classSelect">
+            <option>10-А</option>
+            <option>10-Б</option>
+            <option>10-В</option>
+            <option>10-Г</option>
+            <option>11-А</option>
+            <option>11-Б</option>
+            <option>11-В</option>
+            <option>11-Г</option>
+          </select>
+        </label>
+        <div class="date-tabs">
+          <button type="button" id="todayBtn" class="active">СЬОГОДНІ</button>
+          <button type="button" id="tomorrowBtn">ЗАВТРА</button>
+        </div>
+      </section>
+
+      <section class="summary">
+        <div><span id="dayLabel">—</span><strong id="dateLabel">—</strong></div>
+        <div class="week-pill" id="weekLabel">—</div>
+      </section>
+
+      <section id="holiday" class="holiday hidden"></section>
+      <section id="announcementBox" class="announcements hidden"></section>
+
+      <section class="notification-card">
+        <div class="notification-head">
+          <div>
+            <strong>СПОВІЩЕННЯ КЛАСУ</strong>
+            <p>Заміни, зміна кабінету та важливі повідомлення.</p>
+          </div>
+          <button id="enableNotificationsBtn" type="button">УВІМКНУТИ</button>
+        </div>
+        <div id="notificationInbox" class="notification-inbox"></div>
+      </section>
+
+      <section id="lessonList" class="lesson-list"></section>
+
+      <section class="campus-link-card">
+        <div>
+          <strong>Lyceum Smart Campus</strong>
+          <p>Оголошення, події та швидкий доступ до всіх класів.</p>
+        </div>
+        <a href="/campus/">ВІДКРИТИ</a>
+      </section>
+
+      <section class="install-card">
+        <div class="install-copy">
+          <strong>LyceumTV на телефоні</strong>
+          <p id="installStatus">Додайте розклад на головний екран телефона.</p>
+        </div>
+        <button id="installBtn" type="button">ВСТАНОВИТИ LYCEUMTV</button>
+      </section>
+
+      <section class="share-card">
+        <div class="share-heading">
+          <div>
+            <strong>QR для класу <span id="shareClass">10-А</span></strong>
+            <p>
+              QR відкриває одразу вибраний клас. Вибір запам’ятовується на цьому
+              телефоні.
+            </p>
+          </div>
+          <img id="classQr" alt="QR-код розкладу вибраного класу" />
+        </div>
+        <label class="share-url-label"
+          >Посилання
+          <input id="classUrl" type="text" readonly />
+        </label>
+        <div class="share-actions">
+          <button id="shareBtn" type="button">ПОДІЛИТИСЯ</button>
+          <button id="copyClassUrlBtn" type="button" class="secondary-action">
+            КОПІЮВАТИ
+          </button>
+        </div>
+      </section>
+
+      <dialog id="installHelp">
+        <form method="dialog" class="install-help-card">
+          <div class="dialog-head">
+            <div>
+              <div class="eyebrow">PWA INSTALL+</div>
+              <h2>Додати LyceumTV на головний екран</h2>
+            </div>
+            <button value="close" class="dialog-close" aria-label="Закрити">
+              ×
+            </button>
+          </div>
+          <div id="installHelpText" class="install-help-text"></div>
+          <button value="close" class="dialog-ok">ЗРОЗУМІЛО</button>
+        </form>
+      </dialog>
+    </main>
+
+    <footer>
+      <span id="updatedAt"></span>
+      <span>LyceumTV 3.7.0 Smart Operations</span>
+    </footer>
+    <script src="/mobile/mobile.js"></script>
+  </body>
+</html>

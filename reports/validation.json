@@ -1,0 +1,44 @@
+{
+  "version": "3.7.0",
+  "date": "2026-10-30",
+  "target": "Orange Pi PC / Allwinner H3 / 1 GB / armhf",
+  "observed_user_os": "Armbian Community 26.11.0-trunk.108 / Ubuntu Resolute / kernel 6.18.57-current-sunxi",
+  "target_host": "192.168.0.160",
+  "ssh_user": "admin",
+  "unit_tests_passed": 88,
+  "javascript_runtime_checks_passed": 8,
+  "javascript_files_checked": 16,
+  "browser_security_checks_passed": 9,
+  "browser_safety_checks_passed": 4,
+  "browser_orangepi_profile_checks_passed": 3,
+  "generated_systemd_unit_syntax_checked": 8,
+  "canonical_initial_data_files_unchanged": 8,
+  "tested_runtime": "Cloud Debian 13 x86_64; Python 3.13; Chromium; isolated nginx 1.26.3",
+  "webkit_checks": {
+    "native_armhf_packages": "Ubuntu Resolute main/universe package indexes include gir1.2-webkit-6.0 2.52.0-1, GTK4 4.22.2, Cage 0.2.1 and media packages",
+    "actual_gi_import": "passed with extracted Debian WebKitGTK 2.52.6 and GTK4 4.18.6 libraries on x86_64; no host package installation",
+    "actual_settings": "passed on Xvfb: no page cache/devtools, autoplay without gesture, software compositing, WebsitePolicies.ALLOW, document-viewer context",
+    "full_webview_render": "not run: cloud user namespaces have read-only UID mapping and isolated library libexec paths are not installed into the host OS",
+    "cage_output_management": "upstream Cage v0.2.1 exposes wlr-output-management; installed/extracted wlr-randr 0.4.1 supports --json; actual HDMI modes not tested"
+  },
+  "passed": [
+    "Existing role/session/CSRF/XSS/device-token/media-quota/OTA-signature and recovery regressions",
+    "Current IP applied to TLS input and mobile QR configuration; custom domain and integration tokens retained",
+    "Preflight refuses x86_64/aarch64 and older OS images before service changes",
+    "Kiosk navigation denies remote origins, local administration and file URIs",
+    "HDMI selector never invents a mode not advertised by the monitor",
+    "720p lite browser profile and holiday/weekend preview controls checked without page errors",
+    "Real nginx HTTPS CA/SAN validation, secure cookies and blocked remote local-token bootstrap",
+    "Python/Ruff/shell/JavaScript and generated systemd unit syntax",
+    "Source defaults contain no role keys or integration tokens; known sample sync URLs removed"
+  ],
+  "not_run": [
+    "Full privileged apt/systemd/PAM/Armbian installation on the physical Orange Pi",
+    "Full GTK/WebKit child-process rendering and media in the final Cage session",
+    "Windows PowerShell execution and Windows certificate trust UI",
+    "Physical HDMI/audio/video performance, actual RAM use and CPU temperature",
+    "The users SSH/firewall/router security, power loss or SD-card faults",
+    "Active scanning or sustained load on the physical board"
+  ],
+  "release_verification": "Build verifies source and ZIP CRC/per-file SHA256; unpacked verification recorded alongside the published artifact metadata."
+}

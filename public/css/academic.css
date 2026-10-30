@@ -1,0 +1,344 @@
+/* Academic TV theme. Geometry remains on the shared 1920 × 1080 canvas. */
+:root {
+  --academic-navy: #102b4e;
+  --academic-ink: #172d49;
+  --academic-muted: #48617c;
+  --academic-gold: #d5ad51;
+  font-family: "Noto Sans", Roboto, Arial, sans-serif;
+}
+#stage.theme-normal {
+  background: linear-gradient(125deg, #09192f, #102b4e);
+}
+#stage.theme-alarm {
+  background: linear-gradient(125deg, #570e1b, #8e1425);
+}
+#stage.theme-normal::before,
+#stage.theme-normal::after,
+#stage.theme-alarm::before,
+#stage.theme-alarm::after,
+#stage .class-card {
+  grid-template-columns: 132px minmax(0, 1fr);
+  background: #fcfdff;
+  border: 1px solid #dbe5ef;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px #020b1c26;
+}
+#stage.theme-normal .class-card .class-side {
+  background: #e8eef5;
+  color: var(--academic-ink);
+  border-right: 1px solid #dbe5ef;
+}
+#stage .class-name {
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  text-shadow: none;
+}
+#stage.theme-normal .class-lesson {
+  color: #405c7a !important;
+  margin-top: 16px;
+  font-size: 18px;
+}
+#stage .table-head,
+#stage .entry-row {
+  grid-template-columns: minmax(0, 1fr) 88px 190px;
+}
+#stage .table-head {
+  background: #eef3f8;
+  color: #48617c;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+#stage .table-head span {
+  text-align: center;
+  padding: 0 6px;
+}
+#stage .subject-cell {
+  padding: 8px 12px;
+  gap: 6px;
+}
+#stage .subject-text {
+  color: var(--academic-ink);
+  font-weight: 900;
+  line-height: 1.12;
+}
+#stage .room-cell {
+  background: #eaf0f7;
+  color: #122f52;
+  justify-content: center;
+  padding: 8px 4px;
+  font-size: 30px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+#stage .teacher-cell {
+  padding: 8px 10px;
+  color: #344d68;
+}
+#stage .teacher-text {
+  font-size: 19.5px;
+  font-weight: 700;
+}
+#stage .group {
+  background: #e7eef7;
+  color: #234d7c;
+  border-radius: 6px;
+  box-shadow: none;
+  font-size: 14px;
+}
+#stage .entry-row:nth-child(2) .group {
+  background: #edf0f5;
+  color: #405975;
+}
+#stage .class-card.is-duty {
+  outline: 3px solid var(--academic-gold);
+  outline-offset: -3px;
+  box-shadow: 0 6px 18px #020b1c30;
+}
+#stage.theme-normal .class-card.is-duty .class-side {
+  background: #f7edce;
+  color: #654c14;
+  border-right-color: #e2c986;
+}
+#stage.theme-normal .class-card.is-duty .class-name {
+  color: #654c14;
+  font-size: 47px;
+}
+#stage .class-card.is-duty .table-head {
+  background: #fbf5e4;
+  color: #73591d;
+}
+#stage .duty-flag {
+  background: #e9cd80;
+  color: #4d390b;
+  box-shadow: none;
+  border-radius: 6px;
+  font-size: 10px;
+  padding: 6px;
+}
+#stage .substitution-flag {
+  background: #f1d890;
+  color: #503a05;
+  box-shadow: none;
+  border-radius: 6px;
+}
+#stage #logo {
+  width: 120px;
+  height: 120px;
+  filter: none;
+}
+#stage #headerTitle {
+  color: #f7faff;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+#stage.theme-normal #weekPill {
+  min-width: 300px;
+  background: #e6edf6;
+  color: #183858;
+  font-size: 29px;
+  border-radius: 12px;
+  padding: 12px 20px;
+  box-shadow: none;
+}
+#stage #dayLabel {
+  font-size: 28px;
+  letter-spacing: 0.08em;
+  color: #dce8f7;
+}
+#stage #dateLabel {
+  font-size: 24px;
+  color: #bacce2;
+}
+#stage #clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 88px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  color: #fff;
+}
+#stage #timerCard {
+  background: #f8fbff;
+  border: 1px solid #dce6ef;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px #020b1c22;
+}
+#stage.theme-normal #lessonBadge,
+#stage.theme-normal #timerValue {
+  color: #173653;
+}
+#stage.theme-normal #timerLabel {
+  color: #48617c;
+}
+#stage #timerProgress {
+  height: 7px;
+  border-radius: 4px;
+  box-shadow: none;
+  background: #dae5ef;
+}
+#stage #timerProgress span {
+  background: #4079b4;
+  border-radius: 4px;
+}
+#stage #tvMobileQrCard,
+#stage #weatherCard {
+  border-radius: 14px;
+  box-shadow: none;
+  border: 1px solid #dce6ef;
+  background: #f4f8fc;
+}
+#stage #announcement {
+  background: #f4f8fc;
+  color: #153450;
+  border: 1px solid #cbd9e7;
+  border-radius: 12px;
+  box-shadow: none;
+}
+/* Emergency information has its own high-contrast red palette. */
+#stage.theme-alarm .class-card .class-side {
+  background: #8e2031;
+  color: #fff;
+  border-right: 1px solid #bc7380;
+}
+#stage.theme-alarm .class-lesson {
+  color: #fff !important;
+}
+#stage.theme-alarm .class-card .table-head {
+  background: #f9e9ec;
+  color: #802333;
+}
+#stage.theme-alarm .class-card.is-duty .class-side {
+  background: #795a18;
+  color: #fff;
+  border-right-color: #c9a44f;
+}
+#stage.theme-alarm .class-card.is-duty .class-name {
+  color: #fff;
+}
+#stage.theme-alarm .class-card.is-duty .table-head {
+  background: #f7edce;
+  color: #654c14;
+}
+#stage.theme-alarm #weekPill {
+  background: #f8e7eb;
+  color: #74182a;
+  box-shadow: none;
+  border-radius: 12px;
+  font-size: 29px;
+}
+#stage.theme-alarm #alarmMessage {
+  background: #721324;
+  border: 2px solid #f8b4be;
+  border-radius: 16px;
+  box-shadow: none;
+}
+#stage.theme-alarm #alarmMessage strong {
+  font-size: 30px;
+}
+#stage.theme-alarm .alarm-siren {
+  box-shadow: none;
+}
+#stage.theme-alarm #alarmGuide div {
+  background: #711423;
+  border: 1px solid #cf7c88;
+  border-radius: 8px;
+}
+#stage.theme-alarm #alarmGuide b {
+  color: #ffc6cf;
+}
+#stage.theme-alarm #timerCard {
+  background: #661222;
+  color: #fff;
+  border-color: #c36d7a;
+}
+#stage.theme-alarm #timerProgress span {
+  background: #f8b4be;
+}
+#stage.theme-alarm #weatherCard {
+  background: #661222;
+  border-color: #c36d7a;
+  color: #fff;
+}
+/* The photo is the focus: one compact title strip and no image zoom. */
+#afterSchoolInfo {
+  inset: 24px;
+  padding: 0;
+  gap: 0;
+  background: #09192f;
+  border: 1px solid #2d4665;
+  border-radius: 16px;
+  box-shadow: none;
+  overflow: hidden;
+}
+#afterSchoolInfo h1 {
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 32px;
+  margin: 0;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.035em;
+  text-align: left;
+  text-shadow: none;
+  border-bottom: 1px solid #2d4665;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#afterSchoolInfo h1::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 30px;
+  background: var(--academic-gold);
+  border-radius: 3px;
+  margin-right: 20px;
+}
+#afterSchoolInfo .after-school-content {
+  padding: 14px;
+  overflow: hidden;
+}
+#afterSchoolInfo .after-school-slideshow {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+  background: #060f1b;
+}
+.after-school-slide {
+  transition: opacity 0.65s ease;
+}
+.after-school-slide img,
+.after-school-slide.is-active img {
+  transform: none;
+  transition: none;
+  object-fit: contain;
+}
+.slide-backdrop {
+  filter: blur(28px) brightness(0.32);
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .after-school-slide {
+    transition: none;
+  }
+}
+
+.after-school-slide video {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #060f1b;
+}
+.after-school-slide.is-video video {
+  display: block;
+}
+.after-school-slide.is-video img,
+.after-school-slide.is-video .slide-backdrop {
+  display: none;
+}

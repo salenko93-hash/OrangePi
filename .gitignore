@@ -1,0 +1,28 @@
+# Local environment and generated data
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+Thumbs.db
+*.log
+
+# Working data are created on the device; initial data live in data/default.
+data/*
+!data/config.example.json
+!data/default/
+!data/default/**
+public/media/
+
+# Local release outputs
+dist/
+*.zip
+*.tar.gz
+
+# Local signing and TLS material never belongs in source control
+*.pem
+*.key
+*.p12
+*.pfx

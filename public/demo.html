@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0757c9" />
+    <title>LyceumTV — DEMO перегляд</title>
+    <link rel="stylesheet" href="css/tv.css" />
+    <link rel="stylesheet" href="css/academic.css" />
+    <style>
+      body.demo-active {
+        cursor: auto;
+      }
+      #demoControls {
+        position: fixed;
+        z-index: 9999;
+        left: 50%;
+        top: 10px;
+        transform: translateX(-50%);
+        background: rgba(1, 14, 41, 0.95);
+        border: 1px solid #54739f;
+        box-shadow: 0 6px 40px #0008;
+        border-radius: 16px;
+        padding: 12px 16px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: white;
+        font:
+          600 14px Arial,
+          sans-serif;
+        max-width: calc(100vw - 20px);
+      }
+      #demoControls label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      #demoControls select,
+      #demoControls input,
+      #demoControls button {
+        font:
+          600 14px Arial,
+          sans-serif;
+        background: #183b70;
+        color: white;
+        border: 1px solid #7193c4;
+        border-radius: 8px;
+        padding: 8px;
+        cursor: pointer;
+      }
+      #demoControls input {
+        color-scheme: dark;
+      }
+      #demoControls input[type="checkbox"] {
+        width: 17px;
+        height: 17px;
+        accent-color: #38bdf8;
+      }
+      #demoControls .demo-override {
+        background: #193960;
+        padding: 5px 9px;
+        border-radius: 8px;
+      }
+      #demoControls button {
+        background: #0876ce;
+      }
+      #demoControls .closeDemo {
+        background: #556479;
+      }
+      #demoOpen {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 9999;
+        border: 0;
+        border-radius: 10px;
+        color: white;
+        background: #164578;
+        padding: 12px;
+        cursor: pointer;
+        display: none;
+      }
+      #demoDisclaimer {
+        font-size: 12px;
+        color: #b5dcff;
+      }
+      body.controls-hidden #demoControls {
+        display: none;
+      }
+      body.controls-hidden #demoOpen {
+        display: block;
+      }
+    </style>
+  </head>
+  <body class="demo-active">
+    <div id="demoControls" aria-label="Параметри демонстраційного перегляду">
+      <strong>LYCEUMTV · DEMO</strong>
+      <label
+        >Режим
+        <select id="demoMode">
+          <option value="normal">Звичайний</option>
+          <option value="shelter">Повітряна тривога</option>
+        </select></label
+      >
+      <label
+        >Тиждень
+        <select id="demoWeek">
+          <option value="numerator">Чисельник</option>
+          <option value="denominator">Знаменник</option>
+        </select></label
+      >
+      <label>Дата <input id="demoDate" type="date" value="2026-10-19" /></label>
+      <label
+        >День
+        <select id="demoDay">
+          <option value="MONDAY">Понеділок</option>
+          <option value="TUESDAY">Вівторок</option>
+          <option value="WEDNESDAY">Середа</option>
+          <option value="THURSDAY">Четвер</option>
+          <option value="FRIDAY">П’ятниця</option>
+          <option value="SATURDAY">Субота</option>
+        </select></label
+      >
+      <label
+        >Урок
+        <select id="demoLesson"></select></label
+      ><label class="demo-override"
+        ><input id="demoForceSchedule" type="checkbox" /> Показати уроки для
+        перевірки</label
+      >
+      <button id="demoFullscreen">На весь екран</button
+      ><button id="demoHide" class="closeDemo">Сховати панель</button
+      ><span id="demoDisclaimer"
+        >Лише перегляд · без звуку та команд серверу</span
+      >
+    </div>
+    <button id="demoOpen">⚙ Параметри DEMO</button>
+    <div id="viewport" aria-live="polite">
+      <main id="stage" class="theme-normal">
+        <section
+          id="leftCards"
+          class="cards left"
+          aria-label="10 класи"
+        ></section>
+        <section
+          id="rightCards"
+          class="cards right"
+          aria-label="11 класи"
+        ></section>
+
+        <section id="center">
+          <img id="logo" src="img/logo_white.png" alt="Логотип ліцею" />
+          <header id="headerTitle">РОЗКЛАД УРОКІВ</header>
+          <div id="weekPill">ЧИСЕЛЬНИК</div>
+          <div id="dateBlock">
+            <div id="dayLabel">ЧЕТВЕР</div>
+            <div id="dateLabel">08.10.2026</div>
+          </div>
+          <div id="clock">10:05</div>
+
+          <div id="alarmMessage" class="hidden">
+            <div class="alarm-siren" aria-hidden="true"><span></span></div>
+            <strong>ПОВІТРЯНА ТРИВОГА</strong>
+            <span>НЕГАЙНО ПРОЙДІТЬ В УКРИТТЯ!</span>
+          </div>
+
+          <div
+            id="alarmGuide"
+            class="hidden"
+            aria-label="Дії під час повітряної тривоги"
+          >
+            <div><b>01</b><span>СПОКІЙНО</span></div>
+            <div><b>02</b><span>ДО УКРИТТЯ</span></div>
+            <div><b>03</b><span>ЗА МАРШРУТОМ</span></div>
+            <div><b>04</b><span>ДО ВІДБОЮ</span></div>
+          </div>
+
+          <div id="timerCard">
+            <div id="lessonBadge">3 УРОК</div>
+            <div id="timerLabel">ДО КІНЦЯ УРОКУ</div>
+            <div id="timerProgress" aria-hidden="true"><span></span></div>
+            <div id="timerValue">29:55</div>
+          </div>
+
+          <div
+            id="tvMobileQrCard"
+            class="hidden"
+            aria-label="Мобільний розклад"
+          >
+            <img id="tvMobileQr" alt="QR-код мобільного розкладу" />
+            <div class="tv-mobile-copy">
+              <b>MOBILE / QR</b>
+              <strong>РОЗКЛАД У ТЕЛЕФОНІ</strong>
+              <span>Скануйте QR-код</span>
+              <small id="tvMobileUrl">/mobile/</small>
+            </div>
+          </div>
+
+          <div id="weatherCard">
+            <span id="weatherIcon">☀</span>
+            <div class="weather-copy">
+              <b id="weatherCity">КРОПИВНИЦЬКИЙ</b>
+              <span id="weatherCondition">Оновлення…</span>
+            </div>
+            <strong id="weatherTemp">—°</strong>
+          </div>
+        </section>
+
+        <div id="announcement" class="hidden"></div>
+        <div id="offlineBadge" class="hidden">
+          OFFLINE • ОСТАННІ ЗБЕРЕЖЕНІ ДАНІ
+        </div>
+
+        <section id="signageOverlay" class="hidden">
+          <div class="signage-overlay-inner">
+            <div class="signage-kicker">LYCEUMTV SMART OPERATIONS</div>
+            <h1 id="signageOverlayTitle">Події ліцею</h1>
+            <p id="signageOverlayMessage"></p>
+            <div id="signageOverlayMedia"></div>
+          </div>
+        </section>
+
+        <section id="messagePage" class="hidden">
+          <div class="messageTitle"></div>
+          <div class="messageSubtitle"></div>
+        </section>
+
+        <section id="silencePage" class="hidden">
+          <img src="img/logo_white.png" class="silenceLogo" alt="" />
+          <h1>ХВИЛИНА МОВЧАННЯ</h1>
+          <div class="candle" aria-hidden="true">
+            <div class="glow"></div>
+            <div class="flame outer"></div>
+            <div class="flame inner"></div>
+            <div class="wick"></div>
+            <div class="wax"><div class="melt"></div></div>
+          </div>
+        </section>
+
+        <div id="viewportDebug" class="hidden"></div>
+      </main>
+    </div>
+
+    <audio id="alarmAudio" preload="auto" src="audio/trivoga.mp3"></audio>
+    <audio
+      id="silenceAudio"
+      preload="auto"
+      src="audio/minute_silence.mp3"
+    ></audio>
+    <script src="js/demo_calendar.js"></script>
+    <script src="js/demo_data.js"></script>
+    <script src="js/demo.js"></script>
+  </body>
+</html>

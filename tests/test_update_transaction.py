@@ -1,0 +1,305 @@
+import hashlib
+import io
+import json
+from pathlib import Path
+import socket
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+from unittest.mock import patch
+import urllib.request
+import update_transaction as update
+
+ROOT = Path(__file__).resolve().parents[1]
+APP = """import json
+from pathlib import Path
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from version import VERSION
+class Handler(BaseHTTPRequestHandler):
+ def do_GET(self):
+  raw=json.dumps({'ok':True,'service':'LyceumTV','version':VERSION}).encode();self.send_response(200);self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
+ def log_message(self,*args):pass
+if __name__=='__main__':
+ root=Path(__file__).resolve().parents[1];cfg=json.loads((root/'data/config.json').read_text());HTTPServer(('127.0.0.1',cfg['port']),Handler).serve_forever()
+"""
+
+
+def fixture(root, version):
+    files = {
+        "server/app.py": APP,
+        "server/version.py": f'VERSION = "{version}"\n',
+        "server/update_transaction.py": (
+            ROOT / "server/update_transaction.py"
+        ).read_text(),
+        "launcher.py": (ROOT / "launcher.py").read_text(),
+        "public/index.html": "<html></html>",
+        "public/js/app.js": "void 0;",
+        "data/config.example.json": json.dumps({"version": version}),
+    }
+    for name, content in files.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    (root / "PACKAGE_SHA256.json").write_text(
+        json.dumps(
+            {
+                name: hashlib.sha256((root / name).read_bytes()).hexdigest()
+                for name in files
+            }
+        )
+    )
+
+
+class UpdateTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name) / "installed"
+        self.source = Path(self.tmp.name) / "source"
+        fixture(self.root, "3.5.0")
+        fixture(self.source, "3.5.1")
+        (self.root / "data/config.json").write_text(
+            '{"alerts_token":"keep-token","port":8080}'
+        )
+        (self.root / "public/media").mkdir()
+        (self.root / "public/media/keep.mp4").write_bytes(b"keep-video")
+
+    def prepare(self):
+        result = update.prepare(self.root, self.source)
+        state = update.read_state(self.root)
+        state["not_before"] = 0
+        update.atomic_json(self.root / "data/ota_pending", state)
+        return result
+
+    def test_manual_snapshot_and_queued_rollback_use_same_worker(self):
+        original = (self.root / "server/version.py").read_bytes()
+        update.snapshot(self.root)
+        (self.root / "server/version.py").write_text('VERSION="changed"')
+        update.queue_rollback(self.root)
+        update.execute(self.root)
+        self.assertEqual((self.root / "server/version.py").read_bytes(), original)
+        self.assertIsNone(update.read_state(self.root))
+
+    def test_preparation_does_not_modify_live_code(self):
+        self.prepare()
+        self.assertEqual(update.version_at(self.root), "3.5.0")
+        self.assertTrue((self.root / "data/ota_pending").exists())
+        with self.assertRaises(ValueError):
+            self.prepare()
+
+    def test_partial_copy_failure_rolls_back_entire_code(self):
+        self.prepare()
+        original = update.copy_file
+        calls = 0
+
+        def fail_once(source, destination):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise OSError("disk failure")
+            return original(source, destination)
+
+        with patch.object(update, "copy_file", side_effect=fail_once):
+            update.execute(self.root, check=lambda _: True, poll=0)
+        self.assertEqual(update.version_at(self.root), "3.5.0")
+        self.assertIsNone(update.read_state(self.root))
+        self.assertEqual(
+            json.loads((self.root / "data/last_update.json").read_text())["phase"],
+            "rolled_back",
+        )
+        self.assertEqual(
+            (self.root / "public/media/keep.mp4").read_bytes(), b"keep-video"
+        )
+        self.assertEqual(
+            json.loads((self.root / "data/config.json").read_text())["alerts_token"],
+            "keep-token",
+        )
+
+    def test_three_correct_health_results_are_required(self):
+        self.prepare()
+        checks = []
+        update.execute(
+            self.root, check=lambda expected: checks.append(expected) or True, poll=0
+        )
+        self.assertEqual(checks, ["3.5.1"] * 3)
+        self.assertEqual(update.version_at(self.root), "3.5.1")
+        self.assertIsNone(update.read_state(self.root))
+
+    @unittest.skipUnless(shutil.which("bash"), "requires bash")
+    def test_watchdog_never_accepts_a_pending_update_by_http_alone(self):
+        import shlex
+
+        marker = self.root / "data/ota_pending"
+        marker.write_text('{"target":"3.5.1"}')
+        state = self.root / "watchdog-state"
+        state.mkdir()
+        calls = self.root / "privileged-calls"
+        for healthy in (True, False):
+            source = (ROOT / "scripts/watchdog.sh").read_text()
+            source = source.replace("/run/lyceumtv-watchdog", str(state))
+            source = source.replace("/opt/lyceumtv", str(self.root))
+            # Replace fixed binaries only in this temporary test copy.
+            source = (
+                source.replace("/usr/bin/curl", "test_curl")
+                .replace("/usr/bin/systemctl", "test_systemctl")
+                .replace("/usr/bin/logger", "test_logger")
+            )
+            prelude = (
+                "test_curl(){ return " + ("0" if healthy else "1") + "; }; "
+                "test_systemctl(){ if [[ $1 == is-active ]]; then return 0; fi; echo called >> "
+                + shlex.quote(str(calls))
+                + "; }; "
+                "test_logger(){ :; };\n"
+            )
+            result = subprocess.run(
+                ["bash", "-c", prelude + source], capture_output=True, text=True
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(marker.exists())
+            self.assertFalse(calls.exists())
+        # After a bounded grace period an interrupted update is recovered by
+        # restarting the unprivileged supervisor, never by running app Python as root.
+        (state / "ota-since").write_text(str(int(time.time()) - 181))
+        result = subprocess.run(
+            ["bash", "-c", prelude + source], capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(calls.exists())
+        self.assertTrue(marker.exists())
+
+    def test_old_health_version_is_rejected(self):
+        class Response(io.BytesIO):
+            status = 200
+
+        response = Response(b'{"ok":true,"service":"LyceumTV","version":"3.5.0"}')
+        with patch.object(update.urllib.request, "urlopen", return_value=response):
+            self.assertFalse(update.health_ok(self.root, "3.5.1"))
+
+    def test_health_failure_rolls_back(self):
+        self.prepare()
+        update.execute(self.root, check=lambda _: False, timeout=0.01, poll=0.001)
+        self.assertEqual(update.version_at(self.root), "3.5.0")
+        self.assertIsNone(update.read_state(self.root))
+
+    def test_interrupted_job_recovers_from_snapshot(self):
+        self.prepare()
+        state = update.read_state(self.root)
+        job = update.job_path(self.root, state["job"])
+        update.copy_file(job / "new/server/version.py", self.root / "server/version.py")
+        update.set_phase(self.root, state, "applying")
+        update.execute(self.root, recover=True)
+        self.assertEqual(update.version_at(self.root), "3.5.0")
+
+    def test_tampered_release_is_rejected_before_live_changes(self):
+        (self.source / "server/app.py").write_text("bad")
+        with self.assertRaises(ValueError):
+            self.prepare()
+        self.assertEqual(update.version_at(self.root), "3.5.0")
+        self.assertIsNone(update.read_state(self.root))
+
+    def test_supervisor_rolls_back_when_new_process_reports_wrong_version(self):
+        app = self.source / "server/app.py"
+        app.write_text(
+            app.read_text().replace("'version':VERSION", "'version':'0.0.0'")
+        )
+        manifest = json.loads((self.source / "PACKAGE_SHA256.json").read_text())
+        manifest["server/app.py"] = hashlib.sha256(app.read_bytes()).hexdigest()
+        (self.source / "PACKAGE_SHA256.json").write_text(json.dumps(manifest))
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        (self.root / "data/config.json").write_text(
+            json.dumps({"port": port, "alerts_token": "keep"})
+        )
+        self.prepare()
+        state = update.read_state(self.root)
+        state["health_timeout_seconds"] = 3
+        update.atomic_json(self.root / "data/ota_pending", state)
+        with tempfile.TemporaryFile() as log:
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-B",
+                    str(ROOT / "launcher.py"),
+                    "--root",
+                    str(self.root),
+                ],
+                stdout=log,
+                stderr=log,
+            )
+            try:
+                deadline = time.monotonic() + 15
+                result = self.root / "data/last_update.json"
+                while time.monotonic() < deadline:
+                    if (
+                        result.exists()
+                        and json.loads(result.read_text())["phase"] == "rolled_back"
+                    ):
+                        break
+                    time.sleep(0.1)
+                self.assertTrue(result.exists())
+                self.assertEqual(json.loads(result.read_text())["phase"], "rolled_back")
+                self.assertEqual(update.version_at(self.root), "3.5.0")
+                self.assertEqual(
+                    json.loads((self.root / "data/config.json").read_text())[
+                        "alerts_token"
+                    ],
+                    "keep",
+                )
+            finally:
+                process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+
+    def test_supervisor_completes_real_process_update(self):
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        (self.root / "data/config.json").write_text(
+            json.dumps({"port": port, "alerts_token": "keep"})
+        )
+        self.prepare()
+        with tempfile.TemporaryFile() as log:
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-B",
+                    str(ROOT / "launcher.py"),
+                    "--root",
+                    str(self.root),
+                ],
+                stdout=log,
+                stderr=log,
+            )
+            try:
+                deadline = time.monotonic() + 12
+                while time.monotonic() < deadline:
+                    path = self.root / "data/last_update.json"
+                    if (
+                        path.exists()
+                        and json.loads(path.read_text())["phase"] == "healthy"
+                    ):
+                        break
+                    if process.poll() is not None:
+                        break
+                    time.sleep(0.1)
+                else:
+                    self.fail("supervisor update timed out")
+                self.assertTrue((self.root / "data/last_update.json").exists())
+                with urllib.request.urlopen(
+                    f"http://127.0.0.1:{port}/api/health"
+                ) as response:
+                    self.assertEqual(json.load(response)["version"], "3.5.1")
+            finally:
+                process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()

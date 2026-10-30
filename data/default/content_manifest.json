@@ -1,0 +1,29 @@
+{
+  "version": "2026-10-25-3.4.1-slideshow-title",
+  "schedules": {
+    "schedule_numerator.json": {
+      "url": "schedule_numerator.json",
+      "sha256": "5645b23a434a11ed524ef0c7119457e130b4d99d9106a7b4137ad872000df4f2"
+    },
+    "schedule_denominator.json": {
+      "url": "schedule_denominator.json",
+      "sha256": "ab8a0c4e0f01e997859c47b1619a8359f40cc1755e6362669b5a067a4dc0cd5d"
+    },
+    "shelter_numerator.json": {
+      "url": "shelter_numerator.json",
+      "sha256": "8f28b3f5c88a2ebfad842dcaf2e56c68a1609c24aae87bb0a805c1791a48d2f9"
+    },
+    "shelter_denominator.json": {
+      "url": "shelter_denominator.json",
+      "sha256": "bb504af48604373b0708038ad131b6295c38cfd8ccdaaf7c6f9c0057122e3120"
+    }
+  },
+  "calendar": {
+    "url": "calendar.json",
+    "sha256": "e46a5eb062573665bfe149cdc7375f6d40746952c001a12a7fe1ce2fc9899c01"
+  },
+  "content": {
+    "url": "content.json",
+    "sha256": "bd054d493c3645f72777b775193647127f42aac92bab23b67952b9ed0dd1d856"
+  }
+}
