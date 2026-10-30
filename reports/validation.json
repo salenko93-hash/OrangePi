@@ -1,11 +1,11 @@
 {
-  "version": "3.7.0",
+  "version": "3.7.1",
   "date": "2026-10-30",
   "target": "Orange Pi PC / Allwinner H3 / 1 GB / armhf",
   "observed_user_os": "Armbian Community 26.11.0-trunk.108 / Ubuntu Resolute / kernel 6.18.57-current-sunxi",
   "target_host": "192.168.0.160",
   "ssh_user": "admin",
-  "unit_tests_passed": 88,
+  "unit_tests_passed": 92,
   "javascript_runtime_checks_passed": 8,
   "javascript_files_checked": 16,
   "browser_security_checks_passed": 9,
@@ -30,15 +30,27 @@
     "720p lite browser profile and holiday/weekend preview controls checked without page errors",
     "Real nginx HTTPS CA/SAN validation, secure cookies and blocked remote local-token bootstrap",
     "Python/Ruff/shell/JavaScript and generated systemd unit syntax",
-    "Source defaults contain no role keys or integration tokens; known sample sync URLs removed"
+    "Source defaults contain no role keys or integration tokens; known sample sync URLs removed",
+    "Kiosk unit forbids new privileges and clears ambient capabilities; default bounding set avoids early file-capability exec EPERM",
+    "Real profile preparation makes every parent private/writable and refuses linked homes/parents without changing external targets",
+    "Standalone repair embeds the same canonical safe profile implementation; its shell/heredoc syntax checked"
   ],
   "not_run": [
     "Full privileged apt/systemd/PAM/Armbian installation on the physical Orange Pi",
-    "Full GTK/WebKit child-process rendering and media in the final Cage session",
+    "Physical rendering/audio after applying the new kiosk repair; no full WebKit child-process rendering in the cloud",
     "Windows PowerShell execution and Windows certificate trust UI",
     "Physical HDMI/audio/video performance, actual RAM use and CPU temperature",
     "The users SSH/firewall/router security, power loss or SD-card faults",
     "Active scanning or sustained load on the physical board"
   ],
-  "release_verification": "Build verifies source and ZIP CRC/per-file SHA256; unpacked verification recorded alongside the published artifact metadata."
+  "release_verification": "Build verifies source and ZIP CRC/per-file SHA256; unpacked verification recorded alongside the published artifact metadata.",
+  "physical_370_observations": {
+    "source": "User-provided CHECK_ORANGEPI output, 2026-10-30 09:53–09:54",
+    "backend": "Healthy 3.7.0, nginx/watchdog active",
+    "graphics": "Mali400/Lima, GLES2 Mesa 26.0.8-1ubuntu0.3 initialized",
+    "hdmi": "HDMI-A-1 detected; advertised 1280x720@60 selected successfully",
+    "failure": "WebKit kiosk restarted with status 134 and bwrap: Unexpected capabilities but not setuid, old file caps config?",
+    "cache": "Mesa could not create .cache/mesa_shader_cache because a parent directory was not writable",
+    "fix_result": "Awaiting user verification of the 3.7.1 repair on the physical board"
+  }
 }

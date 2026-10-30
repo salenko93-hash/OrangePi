@@ -4,8 +4,7 @@ set -Eeuo pipefail
 KIOSK_USER="${1:?Kiosk username is required}"
 KIOSK_HOME="$(getent passwd "$KIOSK_USER" | cut -d: -f6)"
 [[ -n "$KIOSK_HOME" && -d "$KIOSK_HOME" ]] || exit 1
-install -d -m 700 -o "$KIOSK_USER" -g "$KIOSK_USER" \
-  "$KIOSK_HOME/.local/share/lyceumtv-webkit" "$KIOSK_HOME/.cache/lyceumtv-webkit"
+/usr/bin/python3 -I "$(dirname "$0")/kiosk_profile.py" "$KIOSK_USER"
 
 # Real logind seat, without a desktop keyring or an interactive login.
 cat >/etc/pam.d/lyceumtv-kiosk <<'PAM'

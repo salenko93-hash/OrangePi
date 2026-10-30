@@ -1,4 +1,4 @@
-const CACHE = "lyceumtv-mobile-v3.7.0";
+const CACHE = "lyceumtv-mobile-v3.7.1";
 const SHELL = [
   "/mobile/",
   "/mobile/mobile.css",

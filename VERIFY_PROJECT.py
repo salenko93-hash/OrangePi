@@ -46,6 +46,7 @@ required = [
     "scripts/launch-kiosk.sh",
     "scripts/watchdog.sh",
     "scripts/kiosk_browser.py",
+    "scripts/kiosk_profile.py",
     "scripts/display_mode.py",
     "scripts/deployment_preflight.py",
     "scripts/tv-session.sh",

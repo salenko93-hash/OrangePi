@@ -2,7 +2,7 @@
 
 ## Встановлення та конфігурація
 
-Спочатку встановіть 3.7.0 із ZIP через PowerShell. Installer змінює ExecStart systemd на `/opt/lyceumtv/launcher.py`; просте копіювання server/ не встановлює новий supervisor. Локальний запуск: `python launcher.py`.
+Спочатку встановіть 3.7.1 із ZIP через PowerShell. Installer змінює ExecStart systemd на `/opt/lyceumtv/launcher.py`; просте копіювання server/ не встановлює новий supervisor. Локальний запуск: `python launcher.py`.
 
 Перед заміною файлів installer перевіряє наявну конфігурацію. Пошкоджений JSON зберігається поряд як `config.json.invalid-*`; встановлення зупиняється. Не видаляйте config.json, якщо потрібно зберегти токени. Відновіть JSON із резервної копії або виправте його вручну. При звичайній міграції alerts_token, telegram_bot_token, медіапараметри й власні URL зберігаються; власні ключі ролей зберігаються, а відомі старі типові значення замінюються випадковими.
 

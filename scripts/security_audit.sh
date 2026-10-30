@@ -22,6 +22,8 @@ else echo 'FAIL: backend missing or exposed beyond loopback'; failed=$((failed+1
 echo '=== Privilege boundary ==='
 check test "$(systemctl show lyceumtv.service -p User --value)" = lyceumtv
 check test "$(systemctl show lyceumtv-kiosk.service -p User --value)" = lyceumtv-kiosk
+check test "$(systemctl show lyceumtv-kiosk.service -p NoNewPrivileges --value)" = yes
+check test -z "$(systemctl show lyceumtv-kiosk.service -p AmbientCapabilities --value)"
 check test "$(stat -c %U /usr/local/lib/lyceumtv/watchdog.sh)" = root
 check test "$(stat -c %U /usr/local/lib/lyceumtv/launch-kiosk.sh)" = root
 check test "$(stat -c %U /usr/local/lib/lyceumtv)" = root

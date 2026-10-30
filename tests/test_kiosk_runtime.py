@@ -20,6 +20,13 @@ class KioskIsolationTests(unittest.TestCase):
         )[1].split("\nEOF", 1)[0]
         self.assertIn("User=$KIOSK_USER", kiosk)
         self.assertIn("ProtectHome=tmpfs", kiosk)
+        # A capability-marked Armbian binary must not gain capabilities on exec:
+        # bubblewrap rejects non-root callers with unexpected permitted caps.
+        self.assertIn("\nNoNewPrivileges=true\n", kiosk)
+        # Empty bounding sets can make capability-marked distro binaries fail
+        # execve with EPERM before no_new_privs can suppress the file caps.
+        self.assertNotIn("\nCapabilityBoundingSet=\n", kiosk)
+        self.assertIn("\nAmbientCapabilities=\n", kiosk)
         self.assertNotIn("ProtectHome=false", kiosk)
         self.assertIn("Requires=user-runtime-dir@$KIOSK_UID.service", kiosk)
         self.assertIn("After=user-runtime-dir@$KIOSK_UID.service", kiosk)
@@ -42,7 +49,6 @@ class KioskLauncherTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.runtime = self.root / "runtime"
-        self.profile = self.root / "profile"
         self.marker = self.root / "cage-called"
         self.bin = self.root / "bin"
         self.bin.mkdir()
@@ -54,15 +60,11 @@ class KioskLauncherTests(unittest.TestCase):
             path = self.bin / name
             path.write_text(code)
             path.chmod(0o755)
-        # Replace only the compositor and profile path in this disposable copy.
+        # Replace only the compositor/session wrapper in this disposable copy.
         script = (
             (ROOT / "scripts/launch-kiosk.sh")
             .read_text()
             .replace("/usr/bin/cage", shlex.quote(str(self.bin / "cage")))
-        )
-        script = script.replace(
-            'PROFILE_DIR="${HOME}/.config/lyceumtv-kiosk-chromium"',
-            'PROFILE_DIR="$KIOSK_TEST_PROFILE"',
         )
         script = script.replace(
             "/usr/bin/dbus-run-session", shlex.quote(str(self.bin / "dbus-run-session"))
@@ -75,7 +77,6 @@ class KioskLauncherTests(unittest.TestCase):
         env.update(
             XDG_RUNTIME_DIR=str(self.runtime),
             KIOSK_TEST_RECORD=str(self.marker),
-            KIOSK_TEST_PROFILE=str(self.profile),
             PATH=str(self.bin) + os.pathsep + env.get("PATH", ""),
         )
         return subprocess.run(
@@ -93,12 +94,11 @@ class KioskLauncherTests(unittest.TestCase):
         self.assertEqual(self.marker.read_text().strip(), str(self.runtime))
         self.assertFalse(list(self.runtime.glob(".lyceumtv-runtime-*")))
 
-    def test_missing_runtime_fails_before_browser_or_profile_changes(self):
+    def test_missing_runtime_fails_before_compositor_starts(self):
         result = self.launch()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("XDG_RUNTIME_DIR", result.stderr)
         self.assertFalse(self.marker.exists())
-        self.assertFalse(self.profile.exists())
 
     def test_read_only_runtime_has_clear_error_instead_of_cage_abort(self):
         self.runtime.mkdir(mode=0o700)

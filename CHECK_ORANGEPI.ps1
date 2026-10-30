@@ -30,6 +30,16 @@ for s in lyceumtv.service lyceumtv-kiosk.service lyceumtv-watchdog.timer nginx.s
   systemctl is-active "$s"
 done
 echo
+echo "=== KIOSK RESTARTS / PRIVILEGES ==="
+systemctl show lyceumtv-kiosk.service -p MainPID -p NRestarts -p ExecMainStatus -p NoNewPrivileges -p CapabilityBoundingSet -p AmbientCapabilities
+kiosk_pid=$(systemctl show lyceumtv-kiosk.service -p MainPID --value)
+if [ "$kiosk_pid" -gt 0 ] 2>/dev/null && [ -r "/proc/$kiosk_pid/status" ]; then
+  sed -n '/^Cap/p; /^NoNewPrivs:/p' "/proc/$kiosk_pid/status"
+fi
+if command -v getcap >/dev/null 2>&1; then
+  getcap /usr/bin/bwrap /usr/bin/cage /usr/bin/python3 2>/dev/null || true
+fi
+echo
 echo "=== BOOT TARGET ==="
 systemctl get-default
 echo

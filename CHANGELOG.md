@@ -1,3 +1,12 @@
+# 3.7.1 — виправлення WebKit kiosk на Armbian
+
+- За журналом фізичної плати: HDMI визначається, Mali400/Lima запускається й доступний 720p; WebKit перезапускається з `bwrap: Unexpected capabilities but not setuid`.
+- Kiosk отримує NoNewPrivileges=true і порожній ambient capability set. Це блокує набуття file capabilities та зберігає штатну sandbox-модель WebKit.
+- Усі батьківські каталоги профілю, зокрема .cache, створюються з власником kiosk і режимом 0700. Операції через дескриптори не переходять за symlink.
+- Додано окремий FIX_KIOSK_ORANGEPI.ps1 для наявного встановлення: змінює service drop-in і права каталогів, без перевстановлення пакетів/заміни даних. Backend після нього лишається 3.7.0; повний ZIP оновлює застосунок до 3.7.1.
+- CHECK_ORANGEPI показує число перезапусків, налаштування й фактичні capabilities /proc та getcap, якщо він доступний.
+- Фізичний результат виправлення очікує перевірки власником; сам факт active ще не доводить появу зображення.
+
 # 3.7.0 — Orange Pi PC
 
 - Окремий репозиторій та чистий ZIP для H3/armhf і Armbian Ubuntu/Debian.
