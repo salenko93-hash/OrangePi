@@ -46,6 +46,17 @@ Ubuntu has no Node; JS checks were performed on Windows. CI supplies Node on bot
 runners; its actual result is recorded on GitHub and in the release notes.
 GitHub Actions was absent before this task; the new workflow has read-only
 contents permissions and tests both Windows and Ubuntu under Python 3.12.
+A separate tag-triggered prerelease workflow reuses that verification, then grants
+contents:write only to its publication job through the ephemeral GitHub job token.
+It requires main ancestry and a matching rc tag, builds twice, compares bytes,
+checks every ZIP hash against the committed tree and publishes ZIP/checksum only
+after success. It never contacts a board or deploys automatically.
+
+The first GitHub Windows runner exposed CP1252 stdout/default-file encoding;
+VERIFY stopped on a Ukrainian source name before tests. The workflow explicitly
+sets PYTHONUTF8=1 for consistent cross-platform source and console encoding.
+The Ubuntu job of that initial run passed. Subsequent actual CI results are
+reported on GitHub; the initial failure is not counted as a successful run.
 
 ## All local SKIP reasons
 
