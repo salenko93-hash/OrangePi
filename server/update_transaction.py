@@ -164,7 +164,7 @@ def copy_file(source, destination):
         shutil.copy2(source, stage)
         if destination.suffix == ".sh":
             stage.chmod(0o755)
-        with stage.open("rb") as handle:
+        with stage.open("r+b") as handle:
             os.fsync(handle.fileno())
         os.replace(stage, destination)
     finally:
@@ -298,7 +298,10 @@ def wait_app_stopped(root, timeout=15):
             return
         try:
             pid = int(path.read_text())
-            os.kill(pid, 0)
+            # signal 0 is a non-destructive liveness probe only on POSIX.
+            # On Windows wait for the supervisor to remove its PID marker.
+            if os.name == "posix":
+                os.kill(pid, 0)
         except (ValueError, ProcessLookupError, FileNotFoundError):
             return
         time.sleep(0.1)

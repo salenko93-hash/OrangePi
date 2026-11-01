@@ -8,13 +8,21 @@ import tempfile
 import subprocess
 import sys
 import unittest
+from types import ModuleType
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
     "display_diagnostics", ROOT / "scripts/display_diagnostics.py"
 )
 diag = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(diag)
+if os.name == "nt":
+    # Pure parser tests do not use the Linux account database. Keep its absent
+    # module scoped to this import; invoking account lookup still fails.
+    with patch.dict(sys.modules, {"pwd": ModuleType("pwd")}):
+        spec.loader.exec_module(diag)
+else:
+    spec.loader.exec_module(diag)
 
 
 class DisplayDiagnosticsTests(unittest.TestCase):
@@ -69,6 +77,7 @@ class DisplayDiagnosticsTests(unittest.TestCase):
     def test_process_snapshot_does_not_emit_argv_or_unrelated_account_settings(self):
         with tempfile.TemporaryDirectory() as directory:
             proc = Path(directory)
+            uid = 1001
             for pid, comm in (("100", "cage"), ("101", "other")):
                 path = proc / pid
                 path.mkdir()
@@ -78,11 +87,11 @@ class DisplayDiagnosticsTests(unittest.TestCase):
                     b"XCURSOR_PATH=/cursor\0ADMIN_KEY=secret-marker\0"
                 )
                 (path / "status").write_text(
-                    f"Uid:\t{os.getuid()}\t{os.getuid()}\t{os.getuid()}\t{os.getuid()}\n"
+                    f"Uid:\t{uid}\t{uid}\t{uid}\t{uid}\n"
                     "PPid:\t1\nNoNewPrivs:\t1\nCapEff:\t0000\nName:\tignored\n"
                 )
                 (path / "cgroup").write_text("0::/system.slice/lyceumtv-kiosk.service")
-            result = diag.processes(os.getuid(), proc)
+            result = diag.processes(uid, proc)
             self.assertEqual(len(result), 1)
             self.assertEqual(result[0]["pid"], 100)
             self.assertNotIn("secret-marker", str(result))
