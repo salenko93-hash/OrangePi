@@ -24,6 +24,7 @@ TOP_FILES = {
     ".gitignore",
     ".prettierignore",
     "INSTALL_TO_ORANGEPI.ps1",
+    "INSTALL_RELEASE_ORANGEPI.ps1",
     "CHECK_ORANGEPI.ps1",
     "CHECK_SECURITY_ORANGEPI.ps1",
     "OPEN_ADMIN.ps1",

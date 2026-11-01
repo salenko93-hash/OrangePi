@@ -1,0 +1,30 @@
+name: Verify OrangePi
+on:
+  push:
+    branches: [main, feat/official-release-updates]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python -m pip install -r requirements.txt ruff==0.14.2
+      - run: python -m ruff check server scripts tests tools launcher.py VERIFY_PROJECT.py
+      - run: python -B VERIFY_PROJECT.py
+      - if: runner.os == 'Linux'
+        shell: bash
+        run: for file in scripts/*.sh; do bash -n "$file"; done
