@@ -1,0 +1,89 @@
+name: Publish verified OrangePi prerelease
+on:
+  push:
+    tags: ['v*.*.*-rc.*']
+permissions:
+  contents: read
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+    permissions:
+      contents: read
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python -m pip install -r requirements.txt ruff==0.14.2
+      - name: Require reviewed main ancestry and matching prerelease tag
+        shell: bash
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          python - <<'PY'
+          import os, re, sys
+          sys.path.insert(0, 'server')
+          from version import VERSION
+          assert re.fullmatch(r'v'+re.escape(VERSION)+r'-rc\.[1-9]\d*', os.environ['GITHUB_REF_NAME'])
+          PY
+      - name: Build twice using the mandatory verifier
+        shell: bash
+        run: |
+          python -B tools/build_release.py
+          cp dist/*.zip /tmp/orangepi-first.zip
+          python -B tools/build_release.py
+          cmp /tmp/orangepi-first.zip dist/*.zip
+          (cd dist && sha256sum -c *.sha256)
+      - name: Verify ZIP against the exact committed tree
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, io, json, pathlib, subprocess, sys, tarfile, tempfile, zipfile
+          sys.path.insert(0, 'server')
+          import github_releases as github
+          from version import VERSION
+          artifact = next(pathlib.Path('dist').glob('*.zip'))
+          with zipfile.ZipFile(artifact) as archive:
+              assert archive.testzip() is None
+              manifest = json.loads(archive.read(f'LyceumTV-{VERSION}-ORANGEPI-PC/PACKAGE_SHA256.json'))
+          tree = subprocess.check_output(['git', 'archive', '--format=tar', 'HEAD'])
+          with tarfile.open(fileobj=io.BytesIO(tree)) as archive:
+              assert all(hashlib.sha256(archive.extractfile(n).read()).hexdigest() == h for n,h in manifest.items())
+          assert json.loads(pathlib.Path('PACKAGE_SHA256.json').read_text()) == manifest
+          with tempfile.TemporaryDirectory() as temporary:
+              github.unpack(artifact.read_bytes(), temporary, VERSION)
+          print('PASS: deterministic ZIP, extraction, source commit and every SHA-256')
+          PY
+      - name: Publish prerelease only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          cat > /tmp/orangepi-release-notes.md <<EOF
+          OrangePi 3.7.5 release candidate. Physical Orange Pi acceptance has NOT been performed; this is not hardware-verified or production-ready.
+
+          - PR #1 fixes Windows rollback/process-tree cleanup and watchdog Git Bash tests while preserving POSIX cursor permissions and Linux behavior.
+          - Official repository-only GitHub updates verify asset digest, SHA-256 sidecar, ZIP and every manifest file. Administrator approval and prerelease opt-in are mandatory; repeated versions are blocked.
+          - Verified private backups preserve local config, schedules and media. Existing health checks automatically roll back failed code; manual rollback verifies the restored version.
+          - PowerShell installation defaults to read-only SSH preflight. No board was accessed or updated during release preparation.
+          - Local Windows: 107 PASS / 0 FAIL / 19 SKIP. Ubuntu WSL: 123 PASS / 0 FAIL / 3 SKIP. Ruff, shell/PowerShell syntax, 16 JS files and 8 runtime checks passed.
+          - This tagged source additionally passed the actual Windows/Ubuntu Actions matrix, mandatory release verification, two identical builds, full extraction and commit/manifest/SHA-256 comparison.
+
+          Source commit: $GITHUB_SHA
+          Actual release verification: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          Commands and limitations: docs/GITHUB_RELEASE_UPDATES.md and reports/RELEASE_375_VERIFICATION.md in the ZIP/source tree.
+          No automatic installation is enabled. Real ARM32, HDMI/audio/cursor, actual SSH deployment and systemd acceptance remain outstanding. Independent Ed25519 signing is only available through the operator-installed legacy trust key; official Releases use GitHub HTTPS/account provenance plus checksums.
+          EOF
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.sha256 --verify-tag --target "$GITHUB_SHA" --prerelease --title "$GITHUB_REF_NAME — Orange Pi release candidate" --notes-file /tmp/orangepi-release-notes.md
