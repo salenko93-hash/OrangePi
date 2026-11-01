@@ -32,7 +32,9 @@ class CursorThemeTests(unittest.TestCase):
             self.assertIn(
                 "# local setting\nexec /usr/bin/cage -m last -- /local/tv\n", upgraded
             )
-            self.assertEqual(path.stat().st_mode & 0o777, 0o755)
+            self.assertTrue(path.is_file())
+            if os.name == "posix":
+                self.assertEqual(path.stat().st_mode & 0o777, 0o755)
             backup = path.with_name(path.name + ".before-cursor-v3")
             self.assertEqual(backup.read_text(), original)
             canonical = (ROOT / "scripts/launch-kiosk.sh").read_text()
@@ -47,7 +49,9 @@ class CursorThemeTests(unittest.TestCase):
                 for name in cursor.CURSOR_NAMES:
                     path = root / cursor.SEARCH_PATH / theme / "cursors" / name
                     self.assertEqual(path.read_bytes(), cursor.transparent_cursor())
-                    self.assertEqual(path.stat().st_mode & 0o777, 0o644)
+                    self.assertTrue(path.is_file())
+                    if os.name == "posix":
+                        self.assertEqual(path.stat().st_mode & 0o777, 0o644)
             self.assertEqual(
                 list((root / "etc/systemd/system").iterdir()),
                 [root / "etc/systemd/system/lyceumtv-kiosk.service.d"],

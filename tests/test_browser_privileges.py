@@ -21,7 +21,7 @@ spec.loader.exec_module(browser)
 
 class BrowserPrivilegeTests(unittest.TestCase):
     def test_pointer_refresh_refuses_root_before_opening_the_display(self):
-        with patch.object(browser.os, "geteuid", return_value=0):
+        with patch.object(browser.os, "geteuid", return_value=0, create=True):
             with self.assertRaisesRegex(RuntimeError, "root"):
                 browser.refresh_seat_cursor()
 
