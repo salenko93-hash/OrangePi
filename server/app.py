@@ -19,7 +19,14 @@ ROOT = HERE.parent
 PUBLIC = ROOT / "public"
 sys.path.insert(0, str(HERE))
 
-from backup_manager import create_backup, delete_backup, list_backups, restore_backup
+from backup_manager import (
+    create_backup,
+    delete_backup,
+    list_backups,
+    restore_backup,
+    verify_backup,
+    BACKUP_DIR,
+)
 from bell_store import load_bells, save_bells
 from calendar_store import (
     delete as delete_calendar,
@@ -174,7 +181,8 @@ class Handler(SecureHTTPMixin, ResponseMixin, BaseHTTPRequestHandler):
             "screens": screens,
             "ota": {
                 "current": current_version(),
-                "configured": bool(str(cfg.get("ota_manifest_url", "")).strip()),
+                "configured": True,
+                "source": "https://github.com/salenko93-hash/OrangePi",
             },
             "smart_campus": {
                 "mobile_url": "/mobile/",
@@ -1222,14 +1230,21 @@ class Handler(SecureHTTPMixin, ResponseMixin, BaseHTTPRequestHandler):
                     result = check_manifest(
                         str(CONFIG.load().get("ota_manifest_url", ""))
                     )
+                    write_event(
+                        "ota.check",
+                        "Official release check",
+                        {
+                            "version": result.get("version"),
+                            "available": result.get("available"),
+                        },
+                        actor="admin",
+                    )
                 elif action == "ota_apply":
                     cfg = CONFIG.load()
                     manifest = check_manifest(str(cfg.get("ota_manifest_url", "")))
                     if not manifest.get("ok"):
                         result = manifest
-                    elif not manifest.get("available") and not bool(
-                        body.get("force", False)
-                    ):
+                    elif not manifest.get("available"):
                         result = {
                             "ok": True,
                             "message": "Встановлена актуальна версія",
@@ -1239,6 +1254,7 @@ class Handler(SecureHTTPMixin, ResponseMixin, BaseHTTPRequestHandler):
                         backup = create_backup(
                             "pre-ota", int(CONFIG.load().get("backup_keep_count", 14))
                         )
+                        backup.update(verify_backup(BACKUP_DIR / backup["name"]))
                         write_event(
                             "ota.start",
                             "Початок OTA-оновлення",

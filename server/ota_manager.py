@@ -1,14 +1,17 @@
 from __future__ import annotations
-from version import VERSION
 import hashlib
 import json
 import os
-import ssl
 import tempfile
-import urllib.request
-import zipfile
 import re
 from release_signature import verify_manifest_signature
+from github_releases import (
+    API as OFFICIAL_API,
+    official_asset,
+    download,
+    unpack,
+    version_tuple as strict_version,
+)
 from pathlib import Path
 from typing import Any
 
@@ -41,20 +44,7 @@ def _https(url: str) -> str:
 
 
 def _download(url: str, timeout: int = 30, limit: int = 128 * 1024 * 1024) -> bytes:
-    req = urllib.request.Request(
-        _https(url), headers={"User-Agent": f"LyceumTV-RPi/{VERSION}"}
-    )
-    with urllib.request.urlopen(
-        req, timeout=timeout, context=ssl.create_default_context()
-    ) as r:
-        _https(r.geturl())
-        code = getattr(r, "status", 200)
-        if code < 200 or code >= 300:
-            raise RuntimeError(f"HTTP {code}")
-        raw = r.read(limit + 1)
-        if len(raw) > limit:
-            raise ValueError("OTA перевищує дозволений розмір")
-        return raw
+    return download(url, timeout=timeout, limit=limit)
 
 
 def current_version() -> str:
@@ -79,13 +69,11 @@ def version_tuple(value: str) -> tuple[int, ...]:
 
 
 def check_manifest(url: str) -> dict[str, Any]:
-    if not str(url or "").strip():
-        return {
-            "ok": False,
-            "configured": False,
-            "message": "OTA manifest URL не налаштовано",
-            "current": current_version(),
-        }
+    if not str(url or "").strip() or url == OFFICIAL_API:
+        from official_updates import check
+
+        return check(ROOT)
+    official_asset(url)
     raw = _download(url, limit=64 * 1024)
     obj = json.loads(raw.decode("utf-8"))
     if not isinstance(obj, dict):
@@ -96,7 +84,7 @@ def check_manifest(url: str) -> dict[str, Any]:
     sha256 = str(obj.get("sha256", "")).strip().lower()
     if not version or not package_url or not re.fullmatch(r"[0-9a-f]{64}", sha256):
         raise ValueError("OTA manifest: потрібні version, package_url, sha256")
-    _https(package_url)
+    official_asset(package_url)
     available = version_tuple(version) > version_tuple(current_version())
     return {
         "ok": True,
@@ -123,9 +111,19 @@ def _safe_zip_member(name: str) -> bool:
 def apply_package(
     package_url: str, expected_sha256: str, expected_version: str | None = None
 ) -> dict[str, Any]:
+    official_asset(package_url)
+    if expected_version is None or strict_version(expected_version) <= strict_version(
+        current_version()
+    ):
+        raise ValueError("Same or older runtime version cannot be applied")
+    if os.name != "posix":
+        raise ValueError("OTA installation requires the Orange Pi POSIX supervisor")
     supervisor = ROOT / "data/launcher.pid"
     try:
-        os.kill(int(supervisor.read_text()), 0)
+        pid = int(supervisor.read_text())
+        if pid <= 0:
+            raise ValueError("Invalid supervisor PID")
+        os.kill(pid, 0)
         command = Path("/proc") / supervisor.read_text().strip() / "cmdline"
         if command.exists() and (
             b"launcher.py" not in command.read_bytes()
@@ -145,34 +143,7 @@ def apply_package(
         td_path = Path(td)
         archive = td_path / "update.zip"
         archive.write_bytes(raw)
-        extract = td_path / "extract"
-        extract.mkdir()
-        with zipfile.ZipFile(archive) as zf:
-            if (
-                len(zf.infolist()) > 4096
-                or sum(info.file_size for info in zf.infolist()) > 256 * 1024 * 1024
-            ):
-                raise ValueError("OTA ZIP завеликий після розпакування")
-            for info in zf.infolist():
-                if not _safe_zip_member(info.filename):
-                    raise ValueError("Небезпечний шлях у OTA ZIP")
-            zf.extractall(extract)
+        source = unpack(raw, td_path / "extract", expected_version)
+        from update_transaction import prepare
 
-        candidates = []
-        if (extract / "server/app.py").is_file():
-            candidates.append(extract)
-        for child in extract.iterdir():
-            if child.is_dir() and (child / "server/app.py").is_file():
-                candidates.append(child)
-        if len(candidates) != 1:
-            raise ValueError("OTA ZIP повинен містити один LyceumTV project")
-        source = candidates[0]
-
-        from update_transaction import prepare, validate_release
-
-        if (
-            expected_version is not None
-            and validate_release(source) != expected_version
-        ):
-            raise ValueError("Версія ZIP не відповідає OTA manifest")
         return prepare(ROOT, source)

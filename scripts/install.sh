@@ -10,13 +10,18 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 USER_NAME="$(id -un)"
 GROUP_NAME="$(id -gn)"
 INSTALL_DIR="/opt/lyceumtv"
+# Existing installations must use the transactional updater, not rsync migration.
+if [[ -e "$INSTALL_DIR/launcher.py" || -e "$INSTALL_DIR/data/config.json" ]]; then
+  echo "Existing installation: use scripts/github_update.py apply with explicit approval; no files changed." >&2
+  exit 1
+fi
 APP_USER="lyceumtv"
 KIOSK_USER="lyceumtv-kiosk"
 KIOSK_WAS_ACTIVE="$(systemctl is-active lyceumtv-kiosk.service 2>/dev/null || true)"
 PI_IP="${1:?Usage: ./scripts/install.sh <Orange-Pi-IPv4-address>}"
 python3 -c 'import ipaddress,sys; ipaddress.IPv4Address(sys.argv[1])' "$PI_IP"
 
-python3 "$ROOT/scripts/deployment_preflight.py"
+python3 "$ROOT/scripts/deployment_preflight.py" --check-only --root "$INSTALL_DIR"
 
 echo "[1/8] Installing native Armbian packages..."
 sudo apt-get update
@@ -181,7 +186,7 @@ sudo "$ROOT/scripts/prepare-kiosk.sh" "$KIOSK_USER"
 echo "[5/8] Installing systemd services..."
 sudo tee /etc/systemd/system/lyceumtv.service >/dev/null <<EOF
 [Unit]
-Description=LyceumTV 3.7.4
+Description=LyceumTV 3.7.5
 After=network-online.target
 Wants=network-online.target
 
@@ -362,7 +367,7 @@ done
 [[ "$healthy" == true ]] || { echo "Server health check failed. Inspect: sudo journalctl -u lyceumtv -n 60" >&2; exit 1; }
 
 echo
-echo "LyceumTV 3.7.4 installed."
+echo "LyceumTV 3.7.5 installed."
 echo "TV:      https://$PI_IP/"
 echo "Admin:   https://$PI_IP/admin"
 echo "Ops:     https://$PI_IP/ops"

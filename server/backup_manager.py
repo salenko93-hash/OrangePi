@@ -1,5 +1,7 @@
 from __future__ import annotations
 import json
+import gzip
+import hashlib
 import os
 import shutil
 import tarfile
@@ -199,3 +201,35 @@ def delete_backup(name: str) -> bool:
         path.unlink()
         return True
     return False
+
+
+def verify_backup(path):
+    """Read the complete gzip stream and every regular member before trusting it."""
+    path = Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Backup must be a regular file")
+    with gzip.open(path, "rb") as stream:
+        while stream.read(1024 * 1024):
+            pass
+    with tarfile.open(path, "r:gz") as archive:
+        names = set()
+        for member in archive:
+            if (
+                not _safe_member(member.name)
+                or member.name in names
+                or member.issym()
+                or member.islnk()
+            ):
+                raise ValueError("Unsafe backup member")
+            names.add(member.name)
+            if member.isfile():
+                with archive.extractfile(member) as stream:
+                    while stream.read(1024 * 1024):
+                        pass
+        if not names:
+            raise ValueError("Empty backup")
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return {"sha256": digest.hexdigest(), "size": path.stat().st_size}
