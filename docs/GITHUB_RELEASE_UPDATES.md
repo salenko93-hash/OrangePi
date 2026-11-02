@@ -45,12 +45,14 @@ sudo -u lyceumtv python3 scripts/github_update.py status
 ```
 
 Stable checks use GitHub Releases/latest. Until a stable release is published,
-that command reports no stable release/HTTP 404; preview checks require the
-explicit flag. Checking records a journal entry but never installs. Reapplying
-the installed version or downgrading via apply is rejected, including UI force
-requests. The admin UI uses stable official Releases when ota_manifest_url is
-empty. Legacy signed manifests remain supported only as official repository
-release assets with the operator-installed root-owned Ed25519 public key.
+the installer reports that no stable official release exists and requires it
+to be published before retrying. Preview checks require an explicitly
+published tag and the opt-in flag. Checking records a journal entry but never
+installs. Reapplying the installed version or downgrading via apply is rejected,
+including UI force requests. The admin UI uses stable official Releases when
+ota_manifest_url is empty. Legacy signed manifests remain supported only as
+official repository release assets with the operator-installed root-owned
+Ed25519 public key.
 
 The supervisor independently requires three consecutive exact-version health
 responses, otherwise restores the code snapshot. Local config, current schedules,

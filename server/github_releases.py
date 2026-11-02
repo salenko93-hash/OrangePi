@@ -99,7 +99,21 @@ def release(tag=None, *, allow_prerelease=False):
     endpoint = API + (
         "/tags/" + tag if tag else ("?per_page=100" if allow_prerelease else "/latest")
     )
-    payload = json.loads(download(endpoint, limit=1024 * 1024))
+    try:
+        payload = json.loads(download(endpoint, limit=1024 * 1024))
+    except urllib.error.HTTPError as error:
+        if error.code == 404 and tag is None and not allow_prerelease:
+            raise ValueError(
+                "No stable official release is published yet. "
+                "Publish a stable GitHub Release or explicitly select a published "
+                "prerelease with --tag and --allow-prerelease."
+            ) from error
+        if error.code == 404 and tag is not None:
+            raise ValueError(
+                f"Official release tag {tag!r} was not found. "
+                "Publish that tag as a GitHub Release before retrying."
+            ) from error
+        raise
     if isinstance(payload, list):
         payload = next((item for item in payload if not item.get("draft")), None)
     if not isinstance(payload, dict) or payload.get("draft"):

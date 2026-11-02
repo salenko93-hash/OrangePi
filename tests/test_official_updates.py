@@ -13,6 +13,7 @@ import time
 import tempfile
 import unittest
 from unittest.mock import patch
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -108,6 +109,27 @@ class OfficialUpdateTests(unittest.TestCase):
             metadata["assets"][0]["digest"] = "sha256:" + "0" * 64
             with self.assertRaisesRegex(ValueError, "disagree"):
                 github.release(self.tag, allow_prerelease=True)
+
+    def test_missing_release_404s_explain_required_publication(self):
+        error = urllib.error.HTTPError(
+            github.API + "/latest", 404, "Not Found", {}, None
+        )
+        with patch.object(github, "download", side_effect=error):
+            try:
+                with self.assertRaisesRegex(ValueError, "No stable official release"):
+                    github.release()
+            finally:
+                error.close()
+
+        error = urllib.error.HTTPError(
+            github.API + "/tags/" + self.tag, 404, "Not Found", {}, None
+        )
+        with patch.object(github, "download", side_effect=error):
+            try:
+                with self.assertRaisesRegex(ValueError, "Publish that tag"):
+                    github.release(self.tag, allow_prerelease=True)
+            finally:
+                error.close()
 
     def test_foreign_assets_downgrade_and_redirect_are_rejected(self):
         for url in (

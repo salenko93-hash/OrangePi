@@ -86,7 +86,10 @@ def write_atomic(path, content, mode=0o644):
     try:
         with os.fdopen(fd, "wb") as stream:
             stream.write(content)
-            os.fchmod(stream.fileno(), mode)
+            if hasattr(os, "fchmod"):
+                os.fchmod(stream.fileno(), mode)
+            else:
+                os.chmod(temporary, mode)
         os.replace(temporary, path)
     finally:
         if os.path.exists(temporary):
